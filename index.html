@@ -1,0 +1,2976 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIS Fibre · Village Progress</title>
+<link href="https://fonts.googleapis.com/css2?family=Taviraj:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --green:#78BE20; --green-dark:#5A9417; --forest:#0F3D24; --forest2:#14532D;
+    --tint:#F0F7E8; --paper:#FFFFFF; --ink:#1B2A20; --muted:#5C6B60;
+    --amber:#F5A623; --line:#DCE8D2; --red:#D64545;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Sarabun',system-ui,sans-serif; background:var(--tint); color:var(--ink);
+    min-height:100vh; font-size:15px;
+  }
+  h1,h2,h3,.display{font-family:'Taviraj',serif;}
+
+  /* ===== Header ===== */
+  header{
+    background:linear-gradient(135deg,var(--forest) 0%,var(--forest2) 70%);
+    color:#fff; padding:18px 16px 20px;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Taviraj',serif;font-weight:700;font-size:20px;color:var(--forest);
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .brand h1{font-size:20px;font-weight:600;line-height:1.15;}
+  .brand small{display:block;font-family:'Sarabun',sans-serif;font-weight:400;font-size:12px;opacity:.75;letter-spacing:.4px;}
+  .header-stats{display:flex;gap:8px;margin-top:14px;}
+  .hstat{
+    flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;padding:8px 10px;
+  }
+  .hstat b{font-size:20px;font-family:'Taviraj',serif;color:var(--green);display:block;line-height:1.1;}
+  .hstat span{font-size:11px;opacity:.8;}
+
+  main{max-width:760px;margin:0 auto;padding:14px 12px 90px;}
+
+  /* ===== Village cards ===== */
+  .vcard{
+    background:var(--paper);border-radius:var(--radius);padding:14px;margin-bottom:12px;
+    border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,61,36,.06);cursor:pointer;
+    transition:box-shadow .15s;
+  }
+  .vcard:active{box-shadow:0 0 0 2px var(--green);}
+  .vcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .vcard h3{font-size:17px;font-weight:600;}
+  .vcard .sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .chip{
+    font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap;
+  }
+  .chip.done{background:#E4F3D2;color:var(--green-dark);}
+  .chip.doing{background:#FDF0D8;color:#A86E08;}
+  .chip.idle{background:#EDEFEA;color:var(--muted);}
+  .bar{height:9px;background:#E9EFE3;border-radius:99px;margin-top:12px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),#9BD84A);transition:width .3s;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-top:12px;}
+  .bar-row .bar{flex:1;margin-top:0;}
+  .pct{font-family:'Taviraj',serif;font-weight:700;font-size:19px;color:var(--forest);min-width:52px;text-align:right;}
+
+  /* ===== Buttons ===== */
+  .btn{
+    font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;border:none;border-radius:10px;
+    padding:10px 16px;cursor:pointer;transition:filter .12s;
+  }
+  .btn:active{filter:brightness(.92);}
+  .btn-green{background:var(--green);color:var(--forest);}
+  .btn-dark{background:var(--forest);color:#fff;}
+  .btn-ghost{background:transparent;color:var(--forest);border:1.5px solid var(--line);}
+  .btn-sm{padding:7px 12px;font-size:13px;border-radius:8px;}
+  .btn-red{background:#FBEAEA;color:var(--red);}
+
+  .fab{
+    position:fixed;bottom:18px;right:16px;z-index:30;
+    box-shadow:0 4px 14px rgba(15,61,36,.35);font-size:15px;padding:13px 20px;border-radius:99px;
+  }
+
+  /* ===== Detail view ===== */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .back{background:none;border:none;font-size:22px;cursor:pointer;color:var(--forest);padding:4px 8px;}
+  .section-label{
+    font-size:11.5px;font-weight:700;letter-spacing:1.2px;color:var(--green-dark);
+    text-transform:uppercase;margin:18px 0 8px;
+  }
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px;}
+
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+  .field input,.field textarea,.field select{
+    width:100%;font-family:'Sarabun',sans-serif;font-size:15px;padding:9px 11px;
+    border:1.5px solid var(--line);border-radius:9px;background:#FBFDF8;color:var(--ink);
+  }
+  .field input:focus,.field textarea:focus{outline:2px solid var(--green);border-color:transparent;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  /* ===== Task rows ===== */
+  .task{
+    border-bottom:1px dashed var(--line);padding:12px 0;
+  }
+  .task:last-child{border-bottom:none;}
+  .task-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .task-name{font-weight:600;font-size:14.5px;flex:1;}
+  .task-name input{
+    width:100%;border:none;background:transparent;font:inherit;color:inherit;padding:2px 0;
+  }
+  .task-name input:focus{outline:none;border-bottom:1.5px solid var(--green);}
+  .task-pct{font-family:'Taviraj',serif;font-weight:700;font-size:16px;min-width:44px;text-align:right;}
+  .task-pct.p100{color:var(--green-dark);}
+  .task-pct.p0{color:#B7C2BA;}
+  .task-pct.pmid{color:var(--amber);}
+  .qchips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+  .q{
+    border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:5px 0;width:46px;
+    font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;
+  }
+  .q.on{background:var(--green);border-color:var(--green);color:var(--forest);}
+  .task input[type=range]{width:100%;margin-top:8px;accent-color:var(--green);}
+  .task-meta{display:flex;gap:8px;margin-top:8px;}
+  .task-meta input{
+    flex:1;font-family:'Sarabun',sans-serif;font-size:13px;padding:6px 9px;
+    border:1.5px solid var(--line);border-radius:8px;background:#FBFDF8;
+  }
+  .task-meta .w{flex:0 0 84px;}
+  .task-del{background:none;border:none;color:#C4CFC7;font-size:16px;cursor:pointer;padding:2px 6px;}
+  .weight-warn{font-size:12.5px;color:var(--red);margin-top:8px;font-weight:600;}
+
+  /* ===== LINE report card (signature) ===== */
+  .report-wrap{margin-top:10px;}
+  .report{
+    background:linear-gradient(160deg,var(--forest) 0%,var(--forest2) 100%);
+    color:#fff;border-radius:16px;padding:18px 16px;position:relative;overflow:hidden;
+  }
+  .report::after{
+    content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;
+    background:radial-gradient(circle,rgba(120,190,32,.28),transparent 70%);
+  }
+  .report .r-brand{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .report .r-dot{width:10px;height:10px;border-radius:50%;background:var(--green);}
+  .report .r-brand span{font-size:12px;letter-spacing:1.6px;font-weight:700;opacity:.85;}
+  .report h3{font-size:21px;font-weight:600;margin-bottom:2px;}
+  .report .r-sub{font-size:12.5px;opacity:.7;margin-bottom:12px;}
+  .report .r-big{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+  .report .r-big b{font-family:'Taviraj',serif;font-size:44px;font-weight:700;color:var(--green);line-height:1;}
+  .report .r-big span{font-size:13px;opacity:.75;}
+  .report .bar{background:rgba(255,255,255,.15);margin:8px 0 14px;}
+  .r-task{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:4px 0;}
+  .r-task .ic{width:18px;text-align:center;}
+  .r-task .nm{flex:1;opacity:.92;}
+  .r-task .pv{font-weight:700;font-family:'Taviraj',serif;}
+  .r-issue{
+    margin-top:12px;background:rgba(245,166,35,.14);border:1px solid rgba(245,166,35,.4);
+    border-radius:10px;padding:8px 11px;font-size:13px;
+  }
+  .r-foot{margin-top:12px;font-size:11.5px;opacity:.6;display:flex;justify-content:space-between;}
+  .report-actions{display:flex;gap:8px;margin-top:10px;}
+  .report-actions .btn{flex:1;}
+
+  /* ===== Gantt / ตารางแผนงาน ===== */
+  .gantt{background:#fff;border-radius:12px;padding:14px 12px 12px;}
+  .g-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:2px solid var(--forest);padding-bottom:8px;margin-bottom:12px;}
+  .g-title{font-family:'Taviraj',serif;font-weight:600;font-size:16px;color:var(--forest);}
+  .g-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .g-brand{font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:var(--green-dark);border:1.5px solid var(--green);border-radius:99px;padding:3px 9px;white-space:nowrap;}
+  .g-axis{position:relative;height:18px;margin-bottom:4px;}
+  .g-tick{position:absolute;top:0;font-size:10.5px;color:var(--muted);transform:translateX(-50%);white-space:nowrap;}
+  .g-body{position:relative;}
+  .g-gridline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #DCE8D2;}
+  .g-row{position:relative;padding:4px 0 9px;}
+  .g-label{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:3px;display:flex;justify-content:space-between;gap:6px;}
+  .g-label .g-dates{font-weight:500;color:var(--muted);font-size:11px;white-space:nowrap;}
+  .g-track{height:20px;background:#F2F6EE;border-radius:6px;position:relative;}
+  .g-bar{position:absolute;top:0;height:100%;background:#D8ECBC;border-radius:6px;overflow:hidden;min-width:8px;}
+  .g-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--green-dark));}
+  .g-bar.late i{background:linear-gradient(90deg,var(--amber),#D98C0A);}
+  .g-today{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--red);z-index:2;}
+  .g-legend{display:flex;gap:14px;margin-top:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;}
+  .g-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;}
+  .g-empty{text-align:center;color:var(--muted);font-size:13.5px;padding:20px 10px;}
+
+  /* ===== Date steppers (ปรับวันแบบเร็ว) ===== */
+  .dctl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center;}
+  .dgroup{display:flex;align-items:center;gap:3px;background:#F6FAF1;border:1.5px solid var(--line);border-radius:9px;padding:3px 4px;}
+  .dgroup label{font-size:11px;color:var(--muted);font-weight:700;padding:0 3px;}
+  .dbtn{border:1px solid var(--line);background:#fff;border-radius:6px;min-width:27px;height:27px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;color:var(--forest);cursor:pointer;padding:0 3px;}
+  .dbtn:active{background:var(--green);}
+  .dval{font-size:12.5px;font-weight:700;color:var(--forest);min-width:54px;text-align:center;}
+  .dend{font-size:11.5px;color:var(--muted);font-weight:600;}
+  .chain-btn{border:1.5px dashed var(--line);background:#fff;border-radius:8px;padding:5px 9px;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Sarabun',sans-serif;}
+  .chain-btn:active{border-color:var(--green);color:var(--green-dark);}
+  .shift-all{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);font-weight:600;}
+
+  .vgroup{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 8px;gap:8px;}
+  .vgroup h2{font-size:15px;color:var(--forest);font-weight:600;}
+  .vgroup span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;}
+  .vgroup:first-child{margin-top:4px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:80px;transform:translateX(-50%);
+    background:var(--forest);color:#fff;padding:10px 18px;border-radius:99px;font-size:14px;
+    box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;
+  }
+  .toast.show{opacity:1;}
+
+  .empty{
+    text-align:center;padding:50px 20px;color:var(--muted);
+  }
+  .empty .display{font-size:19px;color:var(--forest);margin-bottom:6px;}
+
+  /* modal */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(15,61,36,.45);display:none;
+    align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .modal-bg.open{display:flex;}
+  .modal{
+    background:#fff;border-radius:18px 18px 0 0;padding:18px 16px 24px;width:100%;max-width:760px;
+    max-height:88vh;overflow:auto;
+  }
+  .modal h2{font-size:19px;margin-bottom:14px;color:var(--forest);}
+  .modal-actions{display:flex;gap:10px;margin-top:6px;}
+  .modal-actions .btn{flex:1;}
+
+  .data-row{display:flex;gap:8px;margin-top:10px;}
+  .data-row .btn{flex:1;}
+  @media(min-width:600px){
+    .modal-bg{align-items:center;}
+    .modal{border-radius:18px;}
+  }
+  @media(prefers-reduced-motion:reduce){ *{transition:none!important;} }
+
+
+  /* ===== Unit editor (Excel-like) ===== */
+  .ugrid-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:12px;}
+  table.ugrid{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px;}
+  table.ugrid th{background:var(--forest);color:#fff;padding:7px 6px;text-align:left;position:sticky;top:0;white-space:nowrap;font-weight:600;font-size:11.5px;}
+  table.ugrid td{border:1px solid var(--line);padding:0;}
+  table.ugrid td input,table.ugrid td select{width:100%;border:none;background:transparent;font-family:'Sarabun',sans-serif;font-size:12.5px;padding:6px 6px;color:var(--ink);}
+  table.ugrid td input:focus,table.ugrid td select:focus{outline:2px solid var(--green);background:#F7FBF1;}
+  table.ugrid tr:nth-child(even) td{background:#FAFCF7;}
+  table.ugrid td.rownum{background:#EEF4E6;text-align:center;color:var(--muted);font-weight:600;width:36px;padding:6px 4px;}
+  table.ugrid td.del{width:34px;text-align:center;}
+  table.ugrid td.del button{border:none;background:none;color:#C4CFC7;cursor:pointer;font-size:14px;padding:4px;}
+  table.ugrid td.del button:hover{color:var(--red);}
+  .ustat-done{background:#E4F3D2 !important;}
+  .unit-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .unit-count{font-size:12.5px;color:var(--muted);font-weight:600;}
+  table.ugrid td.ucell.sel{background:#DDEFC6 !important;}
+  table.ugrid td.ucell.anchor{outline:2px solid var(--forest);outline-offset:-2px;}
+  table.ugrid td.ucell{cursor:cell;}
+  /* ===== Mode nav ===== */
+  .modebar{max-width:760px;margin:0 auto;padding:10px 12px 0;display:flex;gap:8px;}
+  .mb{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;}
+  .mb.on{background:var(--forest);border-color:var(--forest);color:#fff;}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .kpi .lbl{font-size:12px;color:var(--muted);font-weight:600;}
+  .kpi b{font-family:'Taviraj',serif;font-size:24px;color:var(--forest);display:block;line-height:1.25;margin-top:2px;}
+  .kpi small{font-size:11.5px;color:var(--muted);}
+  /* ===== BOQ module ===== */
+  .role-chip{font-size:12px;border-radius:99px;padding:5px 12px;white-space:nowrap;font-weight:600;}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .tab{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Sarabun',sans-serif;}
+  .tab.on{background:var(--forest);border-color:var(--forest);color:#fff;}
+  .login-wrap{max-width:380px;margin:24px auto;}
+  .login-card{background:#fff;border-radius:18px;padding:26px 22px;border:1px solid var(--line);box-shadow:0 4px 20px rgba(15,61,36,.1);}
+  .login-card h2{color:var(--forest);font-size:21px;margin-bottom:4px;}
+  .login-card p{font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+  .lock{width:44px;height:44px;border-radius:12px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px;}
+  .search{width:100%;font-family:'Sarabun',sans-serif;font-size:14px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;margin-bottom:10px;}
+  .sec-head{background:#EAF3DD;color:var(--forest);font-weight:700;font-size:12.5px;padding:7px 10px;border-radius:8px;margin:10px 0 4px;}
+  .irow{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px dashed var(--line);}
+  .irow .nm{flex:1;font-size:13px;line-height:1.35;}
+  .irow .nm small{color:var(--muted);font-size:11px;}
+  .irow input{width:88px;font-family:'Sarabun',sans-serif;font-size:13.5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;text-align:right;background:#FBFDF8;}
+  .irow input:focus{outline:2px solid var(--green);border-color:transparent;}
+  .irow .line-total{width:92px;text-align:right;font-weight:700;font-size:13px;color:var(--forest);white-space:nowrap;}
+  .irow.hasqty{background:#F7FBF1;}
+  .totalbar{position:sticky;bottom:12px;background:var(--forest);color:#fff;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 -2px 14px rgba(15,61,36,.25);}
+  .totalbar b{font-family:'Taviraj',serif;font-size:20px;color:var(--green);}
+  .totalbar.over b{color:#FF9B9B;}
+  .budget-bar{height:8px;background:#E9EFE3;border-radius:99px;overflow:hidden;margin-top:8px;}
+  .budget-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#9BD84A);}
+  .budget-bar i.over{background:linear-gradient(90deg,var(--amber),var(--red));}
+  .money{font-family:'Taviraj',serif;font-weight:700;}
+  .pos{color:var(--green-dark);} .neg{color:var(--red);}
+  .notice{font-size:12px;color:var(--muted);background:#FDF6E4;border:1px solid #F0E3BE;border-radius:9px;padding:8px 11px;margin-bottom:10px;line-height:1.5;}
+  table.sum{width:100%;border-collapse:collapse;font-size:13px;}
+  table.sum th{background:#EAF3DD;color:var(--forest);text-align:left;padding:7px 8px;font-size:12px;}
+  table.sum td{padding:7px 8px;border-bottom:1px dashed var(--line);}
+  table.sum td.r,table.sum th.r{text-align:right;}
+</style>
+</head>
+<body>
+
+<div id="loginGate"></div>
+<div id="appShell" style="display:none">
+<header>
+  <div class="brand">
+    <div class="brand-mark">F</div>
+    <h1>Village Progress<small>AIS FIBRE · งานก่อสร้างใต้ดิน FTTH</small></h1>
+  </div>
+  <div class="header-stats" id="headerStats"></div>
+</header>
+
+<nav class="modebar">
+  <button id="mbDash" class="mb on" onclick="switchMode('dash')">📊 Dashboard</button>
+  <button id="mbProgress" class="mb" onclick="switchMode('progress')">🏘️ Progress</button>
+  <button id="mbBoq" class="mb" onclick="switchMode('boq')">💰 BOQ</button>
+  <button id="mbUnit" class="mb" onclick="switchMode('unit')">📋 Unit</button>
+  <button id="mbPlan" class="mb" onclick="switchMode('plan')">📐 Plan</button>
+  <button id="mbVendor" class="mb" style="display:none" onclick="switchMode('vendor')">👷 Vendor</button>
+  <button class="mb" style="flex:0 0 auto" id="syncBtn" title="รีเฟรชข้อมูลจาก cloud" onclick="cloudPull()"><span id="syncDot">${cloudOn?String.fromCharCode(9729):""}</span></button>
+  <button class="mb" style="flex:0 0 auto" onclick="logout()">ออก</button>
+</nav>
+<div id="modeDash" style="display:none;max-width:760px;margin:0 auto;padding:12px 12px 40px"></div>
+<main id="modeProgress" style="display:none">
+  <div id="listView"></div>
+  <div id="detailView" style="display:none"></div>
+</main>
+<div id="modeBoq" style="display:none;max-width:760px;margin:0 auto;padding:12px 12px 90px"></div>
+<div id="modeVendor" style="display:none;max-width:760px;margin:0 auto;padding:12px 12px 90px"></div>
+<div id="modeUnit" style="display:none;max-width:100%;margin:0 auto;padding:10px 8px 90px"></div>
+<div id="modePlan" style="display:none;padding:0">
+  <iframe id="planFrame" style="width:100%;height:calc(100vh - 130px);min-height:640px;border:none;display:block;background:#fff" title="FTTH Plan Status"></iframe>
+</div>
+
+<button class="btn btn-green fab" id="fabAdd" onclick="openAddModal()">＋ เพิ่มหมู่บ้าน</button>
+</div>
+
+<!-- Add village modal -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h2>เพิ่มหมู่บ้านใหม่</h2>
+    <div class="field"><label>ชื่อหมู่บ้าน / โครงการ</label><input id="mName" placeholder="เช่น โครงการวีเว่ บางนา กม.7"></div>
+    <div class="grid2">
+      <div class="field"><label>Vendor / ผู้รับเหมา</label><input id="mContractor" list="vendorNameList" placeholder="เลือกหรือพิมพ์ชื่อ Vendor"><datalist id="vendorNameList"></datalist></div>
+      <div class="field"><label>จำนวนพอร์ต / หลังคาเรือน</label><input id="mPorts" type="number" placeholder="เช่น 120"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>วันเริ่มงาน</label><input id="mStart" type="date"></div>
+      <div class="field"><label>กำหนดส่งมอบ</label><input id="mEnd" type="date"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddModal()">ยกเลิก</button>
+      <button class="btn btn-green" onclick="addVillage()">สร้างแผนงาน</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJSON(event)">
+<input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
+<input type="file" id="boqXlsxIn" accept=".xlsx,.xls" style="display:none">
+<input type="file" id="unitXlsx" accept=".xlsx,.xls,.xlsm" style="display:none" onchange="unitImportExcel(event)">
+
+<script>
+/* ================= Default underground task template ================= */
+/* ================= Default task template: แผนทีม 9 ขั้นตอน ================= */
+const TEMPLATE = [
+  {name:'Presale (sale AIS)', w:5},
+  {name:'ติดตั้งตู้ ภายในโครงการ', w:15},
+  {name:'เชื่อมต่อสาย ภายในตู้ ในโครงการ', w:10},
+  {name:'เดินสายชุมสายภายนอกเข้าตู้โครงการ', w:15},
+  {name:'เทสสัญญาณ เตรียมพร้อมให้บริการในโครงการ', w:5},
+  {name:'เดินสาย Fiber Main จากตู้โครงการ เชื่อมต่อหัวต่อในโครงการ', w:20},
+  {name:'เดินสาย Fiber 1 Core จากหัวต่อเข้าบ้านลูกบ้านตามรีเควส', w:15},
+  {name:'เทสค่าสัญญาณภายในบ้านลูกบ้าน พร้อมติดตั้งอินเทอร์เน็ต', w:5},
+  {name:'สมัครและติดตั้งอินเทอร์เน็ตบ้านที่เทสแล้วเสร็จ', w:10},
+];
+
+let state = { villages: [] };
+let currentId = null;
+let hasArtifactStorage = typeof window.storage !== 'undefined';
+
+/* ================= Persistence ================= */
+const LS_KEY = 'ftth-village-progress';
+
+/* ==================================================================
+   ☁️ CLOUD (Supabase) — ใส่ค่า 2 บรรทัดนี้เพื่อเปิดโหมด cloud
+   ดูวิธีหาค่าในคู่มือ (Settings > API): Project URL และ anon public key
+   ถ้าเว้นว่างไว้ = แอปทำงานแบบเดิม (เก็บในเครื่อง) ไม่พัง
+================================================================== */
+const SUPABASE_URL = 'https://fxlxmqrgczbpgjliquft.supabase.co';   // ✅ เชื่อม cloud แล้ว
+/* ปิด cloud เมื่อไหร่ ให้ลบค่าใน 2 บรรทัดนี้ให้เหลือ '' */
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4bHhtcXJnY3picGdqbGlxdWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NTIxNjMsImV4cCI6MjEwMDMyODE2M30._Vd-qNcjfodT3a3CzbRegRZ0EC0KxmmCk6oTBWvsTSI';
+
+let sb = null, cloudOn = false, cloudUser = null;
+function initCloud(){
+  if(SUPABASE_URL && SUPABASE_KEY && window.supabase){
+    try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); cloudOn = true; }catch(e){ cloudOn=false; }
+  }
+}
+async function persist(){
+  const json = JSON.stringify(state);
+  if(hasArtifactStorage){
+    try{ await window.storage.set(LS_KEY, json); }catch(e){}
+  }
+  try{ localStorage.setItem(LS_KEY, json); }catch(e){}
+  cloudQueue();
+}
+async function restore(){
+  if(hasArtifactStorage){
+    try{
+      const r = await window.storage.get(LS_KEY);
+      if(r && r.value){ state = JSON.parse(r.value); return; }
+    }catch(e){}
+  }
+  try{
+    const s = localStorage.getItem(LS_KEY);
+    if(s) state = JSON.parse(s);
+  }catch(e){}
+  state = state || {villages:[]};
+  state.villages = (state.villages||[]).filter(Boolean);
+  state.villages.forEach(v=>{ v.tasks = v.tasks||[]; v.houses = v.houses||[]; });
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'village-progress-' + todayISO() + '.json';
+  a.click();
+  toast('ดาวน์โหลดไฟล์ข้อมูลแล้ว');
+}
+function importJSON(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try{
+      const obj = JSON.parse(e.target.result);
+      if(obj && obj.type === 'vendor-package'){
+        state.villages = obj.villages || [];
+        B.vendors = obj.boqVendors || [];
+        B.jobs = obj.boqJobs || [];
+        persist(); bqPersist();
+        toast('นำเข้าข้อมูล Vendor สำเร็จ เข้าสู่ระบบได้เลย');
+      } else if(obj && obj.villages){
+        state = obj;
+        persist();
+        toast('โหลดข้อมูลสำเร็จ');
+      } else { toast('ไฟล์ไม่ถูกต้อง'); return; }
+      if(session.role){ render(); }
+    }catch(err){ toast('ไฟล์ไม่ถูกต้อง'); }
+  };
+  rd.readAsText(f);
+  ev.target.value = '';
+}
+function exportVendorPackage(vid){
+  const v = vendorById(vid); if(!v) return;
+  const nm = v.name.trim();
+  const wb = XLSX.utils.book_new();
+  const wsA = XLSX.utils.aoa_to_sheet([
+    ['Vendor', v.name],
+    ['Username / อีเมล', v.user || '(ดูในแท็บ Vendor ของผู้ดูแล)'],
+    ['Password', cloudOn ? '(ผู้ดูแลตั้งให้ในแอป — ไม่แสดงในไฟล์)' : (v.pass||'')],
+    ['หมายเหตุ','ไฟล์ข้อมูลเฉพาะ '+nm+' · '+(cloudOn?'login ที่เว็บด้วยอีเมล+รหัสที่ได้รับ':'นำเข้าที่หน้า login ของแอป')]
+  ]);
+  wsA['!cols'] = [{wch:14},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsA, 'บัญชี');
+  const pAoa = [['Vendor', v.name],['ลำดับ','หมวด','รายการ','หน่วย','ราคา/หน่วย (บาท)']];
+  ITEMS.forEach((it,idx)=> pAoa.push([idx+1, it.s, (it.on||it.n), it.u, priceOf(v,idx)]));
+  const wsP = XLSX.utils.aoa_to_sheet(pAoa);
+  wsP['!cols'] = [{wch:6},{wch:24},{wch:56},{wch:8},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsP, excelSheetName('ราคา '+nm, new Set(['บัญชี'])));
+  const vil = state.villages.filter(x=> x.vendorId===vid || (x.contractor||'').trim()===nm);
+  // Progress sheet
+  const maxSteps = Math.max.apply(null, vil.map(x=>(x.tasks||[]).length).concat([9]));
+  const ph = ['โครงการ','Vendor','พอร์ต','เดินสายสำเร็จ (หลัง)','วันเริ่มงาน','กำหนดส่งมอบ','ความคืบหน้ารวม (%)','ปัญหา / อุปสรรค'];
+  for(let i=0;i<maxSteps;i++) ph.push('งาน'+(i+1)+' %');
+  const pgAoa=[ph];
+  vil.forEach(x=>{ const row=[x.name,x.contractor||'',x.ports||'',x.homesDone||'',x.start||'',x.end||'',overall(x),x.issue||'']; for(let i=0;i<maxSteps;i++){const t=(x.tasks||[])[i]; row.push(t?(+t.p||0):'');} pgAoa.push(row); });
+  const wsPg=XLSX.utils.aoa_to_sheet(pgAoa); wsPg['!freeze']={xSplit:1,ySplit:1};
+  XLSX.utils.book_append_sheet(wb, wsPg, 'Progress');
+  boqSheet(wb, vil);
+  const uHdr=['no','โครงการ','บ้านเลขที่','Lat','Lot','status','Solution','Estimate price','Detail','VLC','OLT','ชื่อ Name','บ้านเลขที่ Address','เบอร์โทร Phone number','สนใจ/ไม่สนใจ'];
+  const uAoa=[uHdr]; let un=1;
+  vil.forEach(x=>{ (x.houses||[]).forEach(h=>uAoa.push([un++,x.name,h.no||'',h.lat||'',h.lng||'',h.st||'',h.sol||'',h.est||'',h.detail||'',h.vlc||'',h.olt||'',h.name||'',h.addr||'',h.phone||'',h.interest||''])); });
+  const wsU=XLSX.utils.aoa_to_sheet(uAoa); wsU['!freeze']={xSplit:0,ySplit:1};
+  XLSX.utils.book_append_sheet(wb, wsU, 'Unit');
+  XLSX.writeFile(wb, 'vendor-data-' + nm.replace(/\s+/g,'-') + '-' + todayISO() + '.xlsx');
+  toast('Export ไฟล์ Excel ของ '+nm+' แล้ว (ส่งให้เขาทางไลน์ได้)');
+}
+
+/* ================= Helpers ================= */
+const $ = id => document.getElementById(id);
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function thDate(d){
+  if(!d) return '-';
+  const dt = new Date(d);
+  const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return dt.getDate() + ' ' + m[dt.getMonth()] + ' ' + (dt.getFullYear()+543);
+}
+function thDateShort(d){
+  if(!d) return '-';
+  const dt = new Date(d);
+  const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return dt.getDate() + ' ' + m[dt.getMonth()];
+}
+function dayDiff(a,b){ return Math.round((new Date(b) - new Date(a))/86400000); }
+function addDays(d,n){
+  const dt = new Date(d); dt.setDate(dt.getDate()+n);
+  return dt.toISOString().slice(0,10);
+}
+function overall(v){
+  const tw = v.tasks.reduce((s,t)=>s+(+t.w||0),0);
+  if(!tw) return 0;
+  return Math.round(v.tasks.reduce((s,t)=>s+(+t.w||0)*(+t.p||0),0)/tw);
+}
+function statusOf(pct){
+  if(pct>=100) return ['done','ส่งมอบแล้ว'];
+  if(pct>0) return ['doing','กำลังดำเนินการ'];
+  return ['idle','ยังไม่เริ่ม'];
+}
+function emojiBar(pct){
+  const n = Math.round(pct/10);
+  return '▰'.repeat(n) + '▱'.repeat(10-n);
+}
+function taskIcon(p){ return p>=100 ? '✅' : (p>0 ? '🔶' : '⬜'); }
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ================= Village CRUD ================= */
+function openAddModal(){ fillVendorList(); $('addModal').classList.add('open'); $('mName').focus(); }
+function fillVendorList(){ const dl=$('vendorNameList'); if(dl) dl.innerHTML=B.vendors.map(v=>'<option value="'+esc(v.name)+'">').join(''); }
+function closeAddModal(){ $('addModal').classList.remove('open'); }
+function addVillage(){
+  const name = $('mName').value.trim();
+  if(!name){ toast('กรุณาใส่ชื่อหมู่บ้าน'); return; }
+  const contractor = $('mContractor').value.trim();
+  const mv = B.vendors.find(x=>x.name.trim()===contractor);
+  const vilId = uid();
+  state.villages.push({
+    id: vilId, name,
+    contractor, vendorId: mv? mv.id : null,
+    ports: $('mPorts').value,
+    start: $('mStart').value, end: $('mEnd').value,
+    issue: '',
+    tasks: TEMPLATE.map(t=>({id:uid(), name:t.name, w:t.w, p:0, note:''}))
+  });
+  B.jobs.push({id:uid(), name, villageId:vilId, vendorId: mv? mv.id:'', budget:'', qty:{}, prices:{}, date:todayISO()});
+  bqPersist();
+  ['mName','mContractor','mPorts','mStart','mEnd'].forEach(i=>$(i).value='');
+  closeAddModal(); persist(); render();
+  openDetail(state.villages[state.villages.length-1].id);
+}
+async function deleteVillage(id){
+  const v = state.villages.find(x=>x.id===id);
+  if(!confirm('ลบหมู่บ้านนี้และงาน BOQ ที่ผูกอยู่ทั้งหมด?')) return;
+  const cid = v && v.cloudId;
+  state.villages = state.villages.filter(v=>v.id!==id);
+  B.jobs = B.jobs.filter(j=>j.villageId!==id);
+  bqPersist();
+  currentId = null; persist(); render();
+  if(cloudOn && cloudUser && cid){
+    const dot=document.getElementById('syncDot'); if(dot){dot.textContent='⏳';dot.title='กำลังลบบน cloud...';}
+    try{
+      await sb.from('houses').delete().eq('village_id', cid);
+      await sb.from('boq_jobs').delete().eq('village_id', cid);
+      await sb.from('villages').delete().eq('id', cid);
+      if(dot){dot.textContent='✅';dot.title='ลบแล้ว';setTimeout(()=>{if(dot){dot.textContent='☁️';dot.title='เชื่อม cloud';}},1500);}
+      toast('ลบหมู่บ้านออกจาก cloud แล้ว');
+    }catch(e){
+      if(dot){dot.textContent='⚠️';dot.title='ลบบน cloud ไม่สำเร็จ';}
+      toast('ลบในเครื่องแล้ว แต่ลบบน cloud ไม่สำเร็จ — กด ☁️ แล้วลองใหม่');
+    }
+  }
+}
+
+/* ================= Task ops ================= */
+function setP(vid,tid,val){
+  const t = state.villages.find(v=>v.id===vid).tasks.find(t=>t.id===tid);
+  t.p = Math.max(0,Math.min(100,+val||0));
+  persist(); renderDetail();
+}
+function setField(vid,tid,key,val){
+  const v = state.villages.find(v=>v.id===vid);
+  if(tid){ v.tasks.find(t=>t.id===tid)[key] = val; }
+  else { v[key] = val; }
+  persist();
+  refreshSummary(v);
+}
+function addTask(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  v.tasks.push({id:uid(), name:'งานใหม่', w:0, p:0, note:''});
+  persist(); renderDetail();
+}
+function delTask(vid,tid){
+  const v = state.villages.find(v=>v.id===vid);
+  v.tasks = v.tasks.filter(t=>t.id!==tid);
+  persist(); renderDetail();
+}
+
+/* ================= Views ================= */
+function render(){
+  if(currentId){ renderDetail(); } else { renderList(); }
+  renderHeader();
+}
+function renderHeader(){
+  const vil = visibleVillages();
+  const n = vil.length;
+  const done = vil.filter(v=>overall(v)>=100).length;
+  const doing = vil.filter(v=>{const p=overall(v);return p>0&&p<100;}).length;
+  const avg = n ? Math.round(vil.reduce((s,v)=>s+overall(v),0)/n) : 0;
+  $('headerStats').innerHTML = `
+    <div class="hstat"><b>${n}</b><span>หมู่บ้านทั้งหมด</span></div>
+    <div class="hstat"><b>${doing}</b><span>กำลังดำเนินการ</span></div>
+    <div class="hstat"><b>${done}</b><span>ส่งมอบแล้ว</span></div>
+    <div class="hstat"><b>${avg}%</b><span>ความคืบหน้าเฉลี่ย</span></div>`;
+}
+function renderList(){
+  $('detailView').style.display = 'none';
+  $('listView').style.display = '';
+  $('fabAdd').style.display = isAdmin()? '' : 'none';
+  const el = $('listView');
+  const vil = visibleVillages();
+  if(!vil.length){
+    el.innerHTML = `<div class="empty">
+      <div class="display">ยังไม่มีแผนงานหมู่บ้าน</div>
+      กด "＋ เพิ่มหมู่บ้าน" เพื่อสร้างแผนงานแรก<br>ระบบจะใส่ขั้นตอนงานใต้ดินมาตรฐานให้อัตโนมัติ
+    </div>
+    ${isAdmin()?`<div class="data-row">
+      <button class="btn btn-ghost btn-sm" onclick="$('xlsxInput').click()">📥 Import Excel</button>
+    </div>`:''}`;
+    return;
+  }
+  const vcardHTML = v => {
+    const p = overall(v);
+    const [cls,txt] = statusOf(p);
+    return `<div class="vcard" onclick="openDetail('${v.id}')">
+      <div class="vcard-top">
+        <div>
+          <h3>${esc(v.name)}</h3>
+          <div class="sub">${v.ports? v.ports+' พอร์ต · ':''}ส่งมอบ ${thDate(v.end)}</div>
+        </div>
+        <span class="chip ${cls}">${txt}</span>
+      </div>
+      <div class="bar-row"><div class="bar"><i style="width:${p}%"></i></div><div class="pct">${p}%</div></div>
+    </div>`;
+  };
+  const groups = {};
+  vil.forEach(v=>{
+    const k = (v.contractor||'').trim() || 'ยังไม่ระบุ Vendor';
+    (groups[k] = groups[k] || []).push(v);
+  });
+  const fileBtns = isAdmin() ? `<div class="data-row" style="margin:0 0 6px">
+    <button class="btn btn-dark btn-sm" onclick="exportMasterExcel()">💾 Master Excel (แผน+BOQ+งบ)</button>
+    <button class="btn btn-dark btn-sm" onclick="exportExecSummary()">🏢 สรุปผู้บริหาร</button>
+  </div>
+  <div class="data-row" style="margin:0 0 4px">
+    <button class="btn btn-ghost btn-sm" onclick="exportExcelAll()">📊 Excel ไม่มีงบ (ส่งกลุ่มได้)</button>
+    <button class="btn btn-ghost btn-sm" onclick="$('xlsxInput').click()">📥 Import Excel</button>
+  </div>` : '';
+  el.innerHTML = fileBtns + Object.keys(groups).sort((a,b)=>a.localeCompare(b,'th')).map(k=>{
+    const vs = groups[k];
+    const avg = Math.round(vs.reduce((s,v)=>s+overall(v),0)/vs.length);
+    return `<div class="vgroup"><h2>👷 ${esc(k)}</h2><span>${vs.length} โครงการ · เฉลี่ย ${avg}%</span></div>`
+      + vs.map(vcardHTML).join('');
+  }).join('');
+}
+
+function openDetail(id){ currentId = id; render(); fillVendorList(); window.scrollTo(0,0); }
+function backToList(){ currentId = null; render(); }
+
+function renderDetail(){
+  const v = state.villages.find(v=>v.id===currentId);
+  if(!v){ backToList(); return; }
+  $('listView').style.display = 'none';
+  $('fabAdd').style.display = 'none';
+  const el = $('detailView');
+  el.style.display = '';
+  const p = overall(v);
+  const totalW = v.tasks.reduce((s,t)=>s+(+t.w||0),0);
+
+  el.innerHTML = `
+  <div class="topbar">
+    <button class="back" onclick="backToList()">←</button>
+    <h2 style="font-size:19px;flex:1">${esc(v.name)}</h2>
+    ${isAdmin()?`<button class="btn btn-red btn-sm" onclick="deleteVillage('${v.id}')">ลบ</button>`:''}
+  </div>
+
+  <div class="section-label">ข้อมูลโครงการ</div>
+  <div class="panel">
+    <div class="field"><label>Vendor / ผู้รับเหมา</label><input list="vendorNameList" value="${esc(v.contractor)}" onchange="setContractor('${v.id}',this.value)"></div>
+    <div class="grid2">
+      <div class="field"><label>พอร์ต / หลังคาเรือน</label><input type="number" value="${esc(v.ports)}" onchange="setField('${v.id}',null,'ports',this.value)"></div>
+      <div class="field"><label>เดินสายเข้าบ้านสำเร็จ (หลัง)</label><input type="number" value="${esc(v.homesDone||'')}" onchange="setField('${v.id}',null,'homesDone',this.value)"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>วันเริ่มงาน (ทุกขั้นตอนอ้างอิงวันนี้)</label><input type="date" value="${v.start||''}" onchange="setStartAnchor('${v.id}',this.value)"></div>
+      <div class="field"><label>กำหนดส่งมอบ</label><input type="date" value="${v.end||''}" onchange="setField('${v.id}',null,'end',this.value)"></div>
+    </div>
+    <div class="field" style="margin-bottom:0"><label>⚠️ ปัญหา / อุปสรรค (แสดงในรายงาน)</label>
+      <textarea rows="2" onchange="setField('${v.id}',null,'issue',this.value)" placeholder="เช่น ท่อตัน ซอย 5 รอนิติอนุมัติเปิดบ่อเพิ่ม">${esc(v.issue)}</textarea>
+    </div>
+  </div>
+
+  ${housesPanelHTML(v)}
+  ${budgetPanelHTML(v)}
+  <div class="section-label">ขั้นตอนงาน · แตะตัวเลขเพื่ออัปเดต</div>
+  <div class="panel" id="taskPanel">
+    ${v.tasks.map(t=>taskRow(v,t)).join('')}
+    ${totalW!==100?`<div class="weight-warn">⚠ น้ำหนักงานรวม ${totalW}% (ควรเป็น 100%)</div>`:''}
+    <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="addTask('${v.id}')">＋ เพิ่มขั้นตอนงาน</button></div>
+  </div>
+
+  <div class="section-label">ตารางแผนงาน · Timeline</div>
+  <div class="panel">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-green btn-sm" onclick="genSchedule('${v.id}')">⚡ Gen แผนงานอัตโนมัติ</button>
+      <button class="btn btn-dark btn-sm" onclick="saveGanttPNG('${v.id}')">🖼️ บันทึกรูปแผนงาน</button>
+    </div>
+    <div class="shift-all">เลื่อนทั้งแผน:
+      <button class="dbtn" onclick="shiftAll('${v.id}',-7)">-7</button>
+      <button class="dbtn" onclick="shiftAll('${v.id}',-1)">-1</button>
+      <button class="dbtn" onclick="shiftAll('${v.id}',1)">+1</button>
+      <button class="dbtn" onclick="shiftAll('${v.id}',7)">+7</button> วัน
+    </div>
+    <div id="ganttBox">${ganttHTML(v)}</div>
+  </div>
+
+  <div class="section-label">รายงานสำหรับกลุ่ม LINE</div>
+  <div class="report-wrap">
+    <div class="report" id="reportCard">${reportHTML(v)}</div>
+    <div class="report-actions">
+      <button class="btn btn-dark" onclick="copyLine('${v.id}')">📋 คัดลอกข้อความ LINE</button>
+      <button class="btn btn-green" onclick="savePNG('${v.id}')">🖼️ บันทึกรูปรายงาน</button>
+    </div>
+    <div class="data-row">
+      <button class="btn btn-ghost btn-sm" onclick="exportExcelVillage('${v.id}')">📊 Export Excel โครงการนี้</button>
+    </div>
+  </div>`;
+}
+
+function villageJobs(v){
+  return B.jobs.filter(j=> j.villageId===v.id || (!j.villageId && String(j.name||'').trim()===v.name.trim()));
+}
+function housesPanelHTML(v){
+  const hs = v.houses||[];
+  if(!hs.length) return '';
+  const doneN = hs.filter(h=> h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'')).length;
+  const counts = {};
+  hs.forEach(h=>{ const k=h.st||'ยังไม่ระบุสถานะ'; counts[k]=(counts[k]||0)+1; });
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  return `
+  <div class="section-label">สถานะรายหลัง · จาก sheet หมู่บ้าน</div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <span style="font-size:13px;color:var(--muted)">พร้อมติดตั้ง ONU / สำเร็จ</span>
+      <b class="money" style="font-size:18px;color:var(--forest)">${doneN}/${hs.length} หลัง</b>
+    </div>
+    <div class="bar" style="margin-top:8px"><i style="width:${Math.round(doneN/hs.length*100)}%"></i></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6">${top.map(([k,n])=>esc(k)+' <b>'+n+'</b>').join(' · ')}</div>
+    <div class="data-row"><button class="btn btn-dark btn-sm" onclick="openPlanWith('${v.id}')">📐 อัปเดตลงแบบ PDF (Plan Status)</button></div>
+  </div>`;
+}
+function openPlanWith(vid){
+  const v = state.villages.find(x=>x.id===vid); if(!v) return;
+  try{
+    localStorage.setItem('plan-status-handoff', JSON.stringify({
+      village: v.name,
+      houses: (v.houses||[]).map(h=>({addr:h.no, status:h.st||'', lat:h.lat||'', lng:h.lng||''}))
+    }));
+  }catch(e){}
+  const fr = $('planFrame');
+  fr.src = 'plan-status.html?v=' + Date.now();
+  switchMode('plan');
+}
+function budgetPanelHTML(v){
+  const jobs = villageJobs(v);
+  if(!jobs.length) return '';
+  const cost = jobs.reduce((s,j)=>s+jobCost(j),0);
+  const budget = jobs.reduce((s,j)=>s+jobBudget(j),0);
+  const over = budget && cost > budget;
+  return `
+  <div class="section-label">งบประมาณ BOQ · ข้อมูลภายใน ไม่ปรากฏในรายงาน/รูปที่ส่งหมู่บ้าน</div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <span style="font-size:13px;color:var(--muted)">ค่างานตาม BOQ</span>
+      <span class="money" style="font-size:18px;color:${over?'var(--red)':'var(--forest)'}">${fmt(cost)} ฿</span>
+    </div>
+    ${budget?`<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:4px">
+      <span>งบประมาณ ${fmt(budget)} ฿</span>
+      <span class="${over?'neg':'pos'}" style="font-weight:700">${over?'เกินงบ '+fmt(cost-budget):'คงเหลือ '+fmt(budget-cost)} ฿</span>
+    </div>
+    <div class="budget-bar"><i class="${over?'over':''}" style="width:${Math.min(100,budget?cost/budget*100:0)}%"></i></div>`:''}
+    <div class="data-row">${jobs.map(j=>`<button class="btn btn-ghost btn-sm" onclick="openJobFromVillage('${j.id}')">เปิดงาน BOQ →</button>`).join('')}</div>
+  </div>`;
+}
+function openJobFromVillage(jid){
+  ui.tab='jobs'; ui.jobSel=jid;
+  switchMode('boq');
+}
+function taskRow(v,t){
+  const cls = t.p>=100?'p100':(t.p>0?'pmid':'p0');
+  return `<div class="task">
+    <div class="task-head">
+      <div class="task-name"><input value="${esc(t.name)}" onchange="setField('${v.id}','${t.id}','name',this.value)"></div>
+      <div class="task-pct ${cls}">${t.p}%</div>
+      <button class="task-del" onclick="delTask('${v.id}','${t.id}')" title="ลบงานนี้">✕</button>
+    </div>
+    <div class="qchips">
+      ${[0,25,50,75,100].map(q=>`<button class="q ${+t.p===q?'on':''}" onclick="setP('${v.id}','${t.id}',${q})">${q}</button>`).join('')}
+    </div>
+    <input type="range" min="0" max="100" step="5" value="${t.p}" oninput="setP('${v.id}','${t.id}',this.value)">
+    <div class="task-meta">
+      <input placeholder="หมายเหตุ เช่น เหลือซอย 3-4" value="${esc(t.note)}" onchange="setField('${v.id}','${t.id}','note',this.value)">
+      <input class="w" type="number" title="น้ำหนักงาน %" placeholder="น้ำหนัก" value="${t.w}" onchange="setField('${v.id}','${t.id}','w',+this.value);renderDetail()">
+    </div>
+    ${dateCtlHTML(v,t)}
+  </div>`;
+}
+
+/* ควบคุมวันที่แบบแตะปุ่ม ไม่ต้องเปิดปฏิทิน */
+function dateCtlHTML(v,t){
+  if(t.s && t.e){
+    const dur = dayDiff(t.s,t.e)+1;
+    return `<div class="dctl">
+      <div class="dgroup"><label>เริ่ม</label>
+        <button class="dbtn" onclick="shiftTask('${v.id}','${t.id}',-7)">-7</button>
+        <button class="dbtn" onclick="shiftTask('${v.id}','${t.id}',-1)">-1</button>
+        <span class="dval">${thDateShort(t.s)}</span>
+        <button class="dbtn" onclick="shiftTask('${v.id}','${t.id}',1)">+1</button>
+        <button class="dbtn" onclick="shiftTask('${v.id}','${t.id}',7)">+7</button>
+      </div>
+      <div class="dgroup"><label>ระยะ</label>
+        <button class="dbtn" onclick="changeDur('${v.id}','${t.id}',-1)">−</button>
+        <span class="dval">${dur} วัน</span>
+        <button class="dbtn" onclick="changeDur('${v.id}','${t.id}',1)">＋</button>
+        <button class="dbtn" onclick="changeDur('${v.id}','${t.id}',7)">+7</button>
+      </div>
+      <span class="dend">เสร็จ ${thDateShort(t.e)}</span>
+      <button class="chain-btn" onclick="chainAfterPrev('${v.id}','${t.id}')">⤵ ต่อจากงานบน</button>
+      <button class="chain-btn" onclick="toggleDateEdit('${t.id}')" title="พิมพ์วันที่เอง">📅</button>
+    </div>
+    <div class="task-meta" id="dedit-${t.id}" style="display:none">
+      <input type="date" value="${t.s||''}" onchange="setField('${v.id}','${t.id}','s',this.value);renderDetail()">
+      <input type="date" value="${t.e||''}" onchange="setField('${v.id}','${t.id}','e',this.value);renderDetail()">
+    </div>`;
+  }
+  return `<div class="dctl">
+    <button class="chain-btn" onclick="quickStart('${v.id}','${t.id}')">📅 เริ่มวันนี้ (7 วัน)</button>
+    <button class="chain-btn" onclick="chainAfterPrev('${v.id}','${t.id}')">⤵ ต่อจากงานบน</button>
+    <button class="chain-btn" onclick="toggleDateEdit('${t.id}')">พิมพ์วันที่เอง</button>
+  </div>
+  <div class="task-meta" id="dedit-${t.id}" style="display:none">
+    <input type="date" value="" onchange="setField('${v.id}','${t.id}','s',this.value);renderDetail()">
+    <input type="date" value="" onchange="setField('${v.id}','${t.id}','e',this.value);renderDetail()">
+  </div>`;
+}
+
+function reportHTML(v){
+  const p = overall(v);
+  return `
+    <div class="r-brand"><div class="r-dot"></div><span>AIS FIBRE · UNDERGROUND FTTH</span></div>
+    <h3>${esc(v.name)}</h3>
+    <div class="r-sub">ผู้รับเหมา: ${esc(v.contractor)||'-'} ${v.ports?'· '+v.ports+' พอร์ต':''}</div>
+    <div class="r-big"><b>${p}%</b><span>ความคืบหน้ารวม</span></div>
+    <div class="bar"><i style="width:${p}%"></i></div>
+    ${(+v.homesDone||+v.ports)?`<div class="r-task"><div class="ic">🏠</div><div class="nm">เดินสายเข้าบ้านสำเร็จ</div><div class="pv">${+v.homesDone||0}${+v.ports?'/'+v.ports:''} หลัง</div></div>`:''}
+    ${v.tasks.map(t=>`<div class="r-task"><div class="ic">${taskIcon(+t.p)}</div><div class="nm">${esc(t.name)}${t.note?` <span style="opacity:.55">· ${esc(t.note)}</span>`:''}</div><div class="pv">${t.p}%</div></div>`).join('')}
+    ${v.issue?`<div class="r-issue">⚠️ ${esc(v.issue)}</div>`:''}
+    <div class="r-foot"><span>อัปเดต ${thDate(todayISO())}</span><span>ส่งมอบ ${thDate(v.end)}</span></div>`;
+}
+
+function refreshSummary(v){
+  // light refresh of report + header without full re-render (keeps input focus)
+  const rc = $('reportCard'); if(rc) rc.innerHTML = reportHTML(v);
+  renderHeader();
+}
+
+/* ================= Gantt / ตารางแผนงาน ================= */
+/* วันเริ่มโครงการเป็นจุดอ้างอิง: ขยับวันเริ่มโครงการ = ทุกขั้นตอน + วันส่งมอบ เลื่อนตามเท่ากัน */
+function setStartAnchor(vid, val){
+  const v = state.villages.find(v=>v.id===vid);
+  const old = v.start;
+  v.start = val;
+  if(old && val){
+    const delta = dayDiff(old, val);
+    if(delta !== 0){
+      v.tasks.forEach(t=>{
+        if(t.s) t.s = addDays(t.s, delta);
+        if(t.e) t.e = addDays(t.e, delta);
+      });
+      if(v.end) v.end = addDays(v.end, delta);
+      toast('เลื่อนทุกขั้นตอนตามวันเริ่มโครงการ (' + (delta>0?'+':'') + delta + ' วัน)');
+    }
+  } else if(!old && val && v.end && !v.tasks.some(t=>t.s)){
+    toast('ตั้งวันเริ่มแล้ว กด ⚡ Gen เพื่อสร้างแผนทุกขั้นตอน');
+  }
+  persist(); renderDetail();
+}
+
+function shiftTask(vid,tid,days){
+  const t = state.villages.find(v=>v.id===vid).tasks.find(t=>t.id===tid);
+  if(!t.s || !t.e) return;
+  t.s = addDays(t.s,days); t.e = addDays(t.e,days);
+  persist(); renderDetail();
+}
+function changeDur(vid,tid,days){
+  const t = state.villages.find(v=>v.id===vid).tasks.find(t=>t.id===tid);
+  if(!t.s || !t.e) return;
+  let d = dayDiff(t.s,t.e)+1+days;
+  if(d < 1) d = 1;
+  t.e = addDays(t.s, d-1);
+  persist(); renderDetail();
+}
+function chainAfterPrev(vid,tid){
+  const v = state.villages.find(v=>v.id===vid);
+  const i = v.tasks.findIndex(t=>t.id===tid);
+  if(i <= 0){ toast('เป็นงานแรก ไม่มีงานก่อนหน้า'); return; }
+  const prev = v.tasks[i-1];
+  if(!prev.e){ toast('งานก่อนหน้ายังไม่มีวันที่'); return; }
+  const t = v.tasks[i];
+  const dur = (t.s && t.e) ? dayDiff(t.s,t.e)+1 : 7;
+  t.s = addDays(prev.e,1); t.e = addDays(t.s,dur-1);
+  persist(); renderDetail();
+}
+function quickStart(vid,tid){
+  const t = state.villages.find(v=>v.id===vid).tasks.find(t=>t.id===tid);
+  t.s = todayISO(); t.e = addDays(t.s,6);
+  persist(); renderDetail();
+}
+function toggleDateEdit(tid){
+  const el = $('dedit-'+tid);
+  if(el) el.style.display = (el.style.display==='none') ? 'flex' : 'none';
+}
+function shiftAll(vid,days){
+  const v = state.villages.find(v=>v.id===vid);
+  v.tasks.forEach(t=>{ if(t.s && t.e){ t.s = addDays(t.s,days); t.e = addDays(t.e,days); } });
+  if(v.start) v.start = addDays(v.start,days);
+  if(v.end) v.end = addDays(v.end,days);
+  persist(); renderDetail();
+  toast(days>0 ? 'เลื่อนทั้งแผนออกไป '+days+' วัน' : 'เลื่อนทั้งแผนเข้ามา '+(-days)+' วัน');
+}
+function genSchedule(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  if(!v.start || !v.end){ toast('ใส่วันเริ่มงานและกำหนดส่งมอบก่อนครับ'); return; }
+  if(dayDiff(v.start, v.end) < 1){ toast('กำหนดส่งมอบต้องอยู่หลังวันเริ่มงาน'); return; }
+  const total = dayDiff(v.start, v.end) + 1;
+  const tw = v.tasks.reduce((s,t)=>s+(+t.w||0),0);
+  let cum = 0;
+  v.tasks.forEach(t=>{
+    const w = tw ? (+t.w||0) : 1;
+    const TW = tw || v.tasks.length;
+    const startOff = Math.min(Math.round(cum/TW*total), total-1);
+    cum += w;
+    let endOff = Math.round(cum/TW*total) - 1;
+    if(endOff < startOff) endOff = startOff;
+    endOff = Math.min(endOff, total-1);
+    t.s = addDays(v.start, startOff);
+    t.e = addDays(v.start, endOff);
+  });
+  persist(); renderDetail();
+  toast('สร้างแผนงานตามน้ำหนักงานแล้ว ปรับวันที่รายงานได้เลย');
+}
+
+function ganttHTML(v){
+  const dated = v.tasks.filter(t=>t.s && t.e);
+  if(!dated.length){
+    return `<div class="g-empty">ยังไม่มีวันที่ในแผนงาน<br>ใส่วันเริ่มงาน / กำหนดส่งมอบด้านบน แล้วกด ⚡ Gen แผนงานอัตโนมัติ<br>หรือใส่วันที่รายขั้นตอนเองในแต่ละงาน</div>`;
+  }
+  let min = dated.reduce((m,t)=> t.s<m? t.s:m, dated[0].s);
+  let max = dated.reduce((m,t)=> t.e>m? t.e:m, dated[0].e);
+  if(v.start && v.start<min) min = v.start;
+  if(v.end && v.end>max) max = v.end;
+  const total = Math.max(dayDiff(min,max)+1, 1);
+  const step = total<=60 ? 7 : (total<=180 ? 14 : 30);
+  const today = todayISO();
+
+  let ticks='', grid='';
+  for(let off=0; off<total; off+=step){
+    const pct = (off/total*100).toFixed(2);
+    ticks += `<div class="g-tick" style="left:${pct}%">${thDateShort(addDays(min,off))}</div>`;
+    grid  += `<div class="g-gridline" style="left:${pct}%"></div>`;
+  }
+
+  const rows = v.tasks.map(t=>{
+    if(!t.s || !t.e) return `<div class="g-row"><div class="g-label"><span>${esc(t.name)}</span><span class="g-dates">ยังไม่กำหนดวัน</span></div><div class="g-track"></div></div>`;
+    const left = (dayDiff(min,t.s)/total*100).toFixed(2);
+    const width = ((dayDiff(t.s,t.e)+1)/total*100).toFixed(2);
+    const late = today > t.e && +t.p < 100;
+    return `<div class="g-row">
+      <div class="g-label"><span>${esc(t.name)}</span><span class="g-dates">${thDateShort(t.s)} – ${thDateShort(t.e)} · ${t.p}%</span></div>
+      <div class="g-track"><div class="g-bar ${late?'late':''}" style="left:${left}%;width:${width}%"><i style="width:${t.p}%"></i></div></div>
+    </div>`;
+  }).join('');
+
+  let todayLine = '';
+  if(today >= min && today <= max){
+    const tp = ((dayDiff(min,today)+0.5)/total*100).toFixed(2);
+    todayLine = `<div class="g-today" style="left:${tp}%"></div>`;
+  }
+
+  return `<div class="gantt" id="ganttChart">
+    <div class="g-head">
+      <div>
+        <div class="g-title">แผนงานก่อสร้าง · ${esc(v.name)}</div>
+        <div class="g-sub">${esc(v.contractor)||'-'} · ${thDate(min)} – ${thDate(max)}${v.ports? ' · '+v.ports+' พอร์ต':''}</div>
+      </div>
+      <div class="g-brand">AIS FIBRE</div>
+    </div>
+    <div class="g-axis">${ticks}</div>
+    <div class="g-body">${grid}${todayLine}${rows}</div>
+    <div class="g-legend">
+      <span><i style="background:#D8ECBC"></i>แผนงาน</span>
+      <span><i style="background:linear-gradient(90deg,var(--green),var(--green-dark))"></i>ผลงานจริง</span>
+      <span><i style="background:var(--amber)"></i>ล่าช้ากว่าแผน</span>
+      <span><i style="background:var(--red);width:3px;border-radius:1px"></i> เส้นวันนี้ (${thDateShort(today)})</span>
+    </div>
+  </div>`;
+}
+
+function refreshGantt(){
+  const v = state.villages.find(v=>v.id===currentId);
+  const box = $('ganttBox');
+  if(v && box) box.innerHTML = ganttHTML(v);
+}
+
+function saveGanttPNG(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  const chart = $('ganttChart');
+  if(!chart){ toast('ยังไม่มีแผนงาน กด ⚡ Gen ก่อนครับ'); return; }
+  toast('กำลังสร้างรูป...');
+  html2canvas(chart,{scale:2,backgroundColor:'#FFFFFF'}).then(canvas=>{
+    const a = document.createElement('a');
+    a.download = 'plan-' + v.name.replace(/\s+/g,'-') + '-' + todayISO() + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('บันทึกรูปแผนงานแล้ว');
+  }).catch(()=>toast('สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง'));
+}
+
+/* ================= Excel import / export ================= */
+function villageAOA(v){
+  const p = overall(v);
+  const rows = [
+    ['โครงการ', v.name],
+    ['ผู้รับเหมา', v.contractor||''],
+    ['พอร์ต / หลังคาเรือน', v.ports||''],
+    ['วันเริ่มงาน', v.start||''],
+    ['กำหนดส่งมอบ', v.end||''],
+    ['ความคืบหน้ารวม (%)', p],
+    ['ปัญหา / อุปสรรค', v.issue||''],
+    [],
+    ['ลำดับ','ขั้นตอนงาน','น้ำหนัก (%)','ความคืบหน้า (%)','วันเริ่ม','วันเสร็จ','หมายเหตุ']
+  ];
+  v.tasks.forEach((t,i)=>rows.push([i+1, t.name, +t.w||0, +t.p||0, t.s||'', t.e||'', t.note||'']));
+  return rows;
+}
+function excelSheetName(base, used){
+  let n = (base||'โครงการ').replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,25).trim() || 'โครงการ';
+  let name = n, i = 2;
+  while(used.has(name)){ name = n.slice(0,22) + ' ' + i++; }
+  used.add(name);
+  return name;
+}
+function excelWidths(ws){ ws['!cols'] = [{wch:6},{wch:48},{wch:11},{wch:15},{wch:12},{wch:12},{wch:28}]; }
+function exportExcelVillage(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(villageAOA(v));
+  excelWidths(ws);
+  XLSX.utils.book_append_sheet(wb, ws, excelSheetName(v.name, new Set()));
+  XLSX.writeFile(wb, 'progress-' + v.name.replace(/\s+/g,'-') + '-' + todayISO() + '.xlsx');
+  toast('Export Excel แล้ว');
+}
+function exportExcelAll(){
+  if(!state.villages.length){ toast('ยังไม่มีข้อมูล'); return; }
+  const wb = XLSX.utils.book_new();
+  const list = [...state.villages].sort((a,b)=>((a.contractor||'')+a.name).localeCompare((b.contractor||'')+b.name,'th'));
+
+  /* สรุปราย Vendor */
+  const byVendor = {};
+  list.forEach(v=>{
+    const k = (v.contractor||'').trim() || 'ยังไม่ระบุ Vendor';
+    (byVendor[k] = byVendor[k] || []).push(v);
+  });
+  const vsum = [['Vendor / ผู้รับเหมา','จำนวนโครงการ','กำลังดำเนินการ','ส่งมอบแล้ว','ความคืบหน้าเฉลี่ย (%)']];
+  Object.keys(byVendor).forEach(k=>{
+    const vs = byVendor[k];
+    const done = vs.filter(v=>overall(v)>=100).length;
+    const doing = vs.filter(v=>{const p=overall(v);return p>0&&p<100;}).length;
+    const avg = Math.round(vs.reduce((s,v)=>s+overall(v),0)/vs.length);
+    vsum.push([k, vs.length, doing, done, avg]);
+  });
+  const wsV = XLSX.utils.aoa_to_sheet(vsum);
+  wsV['!cols'] = [{wch:26},{wch:14},{wch:16},{wch:12},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, wsV, 'สรุปราย Vendor');
+
+  /* สรุปรวมทุกโครงการ (เรียงตาม Vendor) */
+  const sum = [['ลำดับ','Vendor','หมู่บ้าน / โครงการ','พอร์ต','ความคืบหน้า (%)','สถานะ','เริ่มงาน','กำหนดส่งมอบ','ปัญหา']];
+  list.forEach((v,i)=>{
+    const p = overall(v);
+    sum.push([i+1, v.contractor||'', v.name, v.ports||'', p, statusOf(p)[1], v.start||'', v.end||'', v.issue||'']);
+  });
+  const ws0 = XLSX.utils.aoa_to_sheet(sum);
+  ws0['!cols'] = [{wch:6},{wch:18},{wch:32},{wch:8},{wch:16},{wch:16},{wch:12},{wch:14},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws0, 'สรุปรวม');
+
+  const used = new Set(['สรุปราย Vendor','สรุปรวม']);
+  list.forEach(v=>{
+    const ws = XLSX.utils.aoa_to_sheet(villageAOA(v));
+    excelWidths(ws);
+    XLSX.utils.book_append_sheet(wb, ws, excelSheetName(v.name, used));
+  });
+  XLSX.writeFile(wb, 'village-progress-' + todayISO() + '.xlsx');
+  toast('Export Excel ทุกหมู่บ้านแล้ว');
+}
+function cellDate(val){
+  if(val instanceof Date){
+    const d = new Date(val.getTime() - val.getTimezoneOffset()*60000);
+    return d.toISOString().slice(0,10);
+  }
+  if(typeof val === 'number' && val > 20000){
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0,10);
+  }
+  if(typeof val === 'string'){
+    const s = val.trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  }
+  return '';
+}
+function importExcel(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      // บัญชี Vendor: จากไฟล์ package ('บัญชี') หรือ Master ('บัญชีทั้งหมด')
+      let accVendor = null, touchedB = false;
+      const acc = parseAccountSheet(wb);
+      if(acc){
+        let vd = B.vendors.find(x=>x.user===acc.user);
+        if(!vd){ vd = {id:uid(), name:acc.name, user:acc.user, pass:acc.pass, prices:{}}; B.vendors.push(vd); }
+        else { vd.pass = acc.pass; vd.name = acc.name; }
+        accVendor = vd; touchedB = true;
+      }
+      const snAll = wb.SheetNames.find(x=>x==='บัญชีทั้งหมด');
+      if(snAll){
+        const aa = XLSX.utils.sheet_to_json(wb.Sheets[snAll], {header:1, defval:''});
+        aa.slice(1).forEach(r=>{
+          if(!r || !r[1]) return;
+          const name=String(r[0]||r[1]), user=String(r[1]), pass=String(r[2]||'');
+          let vd = B.vendors.find(x=>x.user===user);
+          if(!vd){ B.vendors.push({id:uid(), name, user, pass, prices:{}}); }
+          else { vd.name = name; if(pass) vd.pass = pass; }
+          touchedB = true;
+        });
+      }
+      // ราคา: ทุก sheet ที่ขึ้นต้นด้วย 'ราคา' — จับคู่ Vendor จากแถว meta หรือจากบัญชีใน package
+      wb.SheetNames.filter(x=>x.startsWith('ราคา')).forEach(psn=>{
+        const pa = XLSX.utils.sheet_to_json(wb.Sheets[psn], {header:1, defval:''});
+        let vd = accVendor;
+        const metaRow = pa.find(r=> r && String(r[0]).trim()==='Vendor');
+        if(metaRow){
+          const nm = String(metaRow[1]||'').trim();
+          vd = B.vendors.find(x=>x.name.trim()===nm) || vd;
+        }
+        if(!vd) return;
+        const hi = pa.findIndex(r=> r && String(r[2]).trim()==='รายการ');
+        if(hi<0) return;
+        const nameIdx = {}; ITEMS.forEach((it,i)=> nameIdx[it.n.trim()] = i);
+        for(let i=hi+1;i<pa.length;i++){
+          const r = pa[i]; if(!r) continue;
+          const nm = String(r[2]||'').trim(); const pr = +r[4];
+          if(nm && nameIdx[nm]!=null && !isNaN(pr)) vd.prices['i'+nameIdx[nm]] = pr;
+        }
+        touchedB = true;
+      });
+      if(touchedB) bqPersist();
+      // ไฟล์ Master รูปแบบ 3 sheet (Progress / BOQ / Unit)
+      if(importMaster3(wb)){
+        persist(); bqPersist();
+        if(session.role){ currentId = null; render(); }
+        toast('นำเข้า Master สำเร็จ (Progress · BOQ · Unit)');
+        return;
+      }
+      let added = 0, updated = 0, teamFmt = 0;
+      wb.SheetNames.forEach(sn=>{
+        if(sn === 'สรุปรวม' || sn === 'สรุปราย Vendor' || sn.startsWith('บัญชี') || sn.startsWith('ราคา') || sn === 'วิธีกรอก' || /ลูกบ้าน/.test(sn)) return;
+        const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:''});
+        let v = parseAppFormat(aoa);
+        if(!v){ v = parseTeamFormat(aoa, sn); if(v) teamFmt++; }
+        if(v){ state.villages.push(v); added++; }
+      });
+      if(added || updated || acc){
+        persist(); bqPersist();
+        if(session.role){ currentId = null; render(); }
+        toast('นำเข้าสำเร็จ: ใหม่ ' + added + ' · อัปเดต ' + updated + (acc?' · บัญชี Vendor 1':'') + (teamFmt ? ' (กด ⚡ Gen เพื่อใส่วันที่)' : ''));
+      } else toast('ไม่พบรูปแบบที่รู้จักในไฟล์');
+    }catch(err){ toast('อ่านไฟล์ Excel ไม่สำเร็จ'); }
+  };
+  rd.readAsArrayBuffer(f);
+  ev.target.value = '';
+}
+
+/* รูปแบบที่ export จากแอปนี้ — อ่านกลับได้ครบทุกช่อง */
+function parseAppFormat(aoa){
+  const hi = aoa.findIndex(r => r && r[1] === 'ขั้นตอนงาน');
+  if(hi < 0) return null;
+  const meta = {};
+  for(let i=0;i<hi;i++){ if(aoa[i] && aoa[i][0] !== '') meta[String(aoa[i][0])] = aoa[i][1]; }
+  const tasks = [];
+  for(let i=hi+1;i<aoa.length;i++){
+    const r = aoa[i];
+    if(!r || r[1] === '' || r[1] == null) continue;
+    tasks.push({id:uid(), name:String(r[1]), w:+r[2]||0, p:+r[3]||0, s:cellDate(r[4]), e:cellDate(r[5]), note:String(r[6]||'')});
+  }
+  if(!tasks.length) return null;
+  return {
+    id: uid(),
+    name: String(meta['โครงการ']||'โครงการนำเข้า'),
+    contractor: String(meta['ผู้รับเหมา']||''),
+    ports: String(meta['พอร์ต / หลังคาเรือน']||''),
+    start: cellDate(meta['วันเริ่มงาน']),
+    end: cellDate(meta['กำหนดส่งมอบ']),
+    issue: String(meta['ปัญหา / อุปสรรค']||''),
+    tasks
+  };
+}
+/* รูปแบบแผนทีม (no / description / ผู้รับผิดชอบ) — อ่านชื่องานได้ แต่ช่องสีที่ระบายวันไม่สามารถอ่านได้ */
+function parseTeamFormat(aoa, sn){
+  const hi = aoa.findIndex(r => r && String(r[0]).trim().toLowerCase() === 'no' && String(r[1]).trim().toLowerCase() === 'description');
+  if(hi < 0) return null;
+  const name = (aoa[0] && aoa[0][0]) ? String(aoa[0][0]) : sn;
+  const tasks = [];
+  for(let i=hi+1;i<aoa.length;i++){
+    const r = aoa[i];
+    if(!r || r[1] === '' || r[1] == null) continue;
+    tasks.push({id:uid(), name:String(r[1]), w:0, p:0, s:'', e:'', note:String(r[2]||'')});
+  }
+  if(!tasks.length) return null;
+  const w = Math.floor(100/tasks.length);
+  tasks.forEach((t,i)=> t.w = (i === tasks.length-1) ? 100 - w*(tasks.length-1) : w);
+  return {id:uid(), name, contractor:'', ports:'', start:'', end:'', issue:'', tasks};
+}
+
+function exportExecSummary(){
+  if(!state.villages.length){ toast('ยังไม่มีข้อมูล'); return; }
+  const list = [...state.villages].sort((a,b)=>((a.contractor||'')+a.name).localeCompare((b.contractor||'')+b.name,'th'));
+  const aoa = [['ลำดับ','หมู่บ้าน / โครงการ','Vendor','ความคืบหน้า (%)','เดินสายสำเร็จ/พอร์ต','สถานะ','เริ่มงาน','กำหนดส่งมอบ','ค่างาน BOQ (บาท)','งบ PO (บาท)','คงเหลือ (บาท)','ปัญหา']];
+  list.forEach((v,i)=>{
+    const p = overall(v);
+    const jobs = villageJobs(v);
+    const cost = jobs.reduce((s,j)=>s+jobCost(j),0);
+    const budget = jobs.reduce((s,j)=>s+jobBudget(j),0);
+    aoa.push([i+1, v.name, v.contractor||'', p, (+v.homesDone||0)+'/'+(+v.ports||0), statusOf(p)[1], v.start||'', v.end||'', jobs.length?cost:'', budget||'', budget?budget-cost:'', v.issue||'']);
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:6},{wch:32},{wch:16},{wch:14},{wch:14},{wch:14},{wch:11},{wch:13},{wch:15},{wch:15},{wch:14},{wch:28}];
+  XLSX.utils.book_append_sheet(wb, ws, 'สรุปผู้บริหาร');
+  XLSX.writeFile(wb, 'exec-summary-' + todayISO() + '.xlsx');
+  toast('Export สรุปผู้บริหารแล้ว (ไฟล์ภายใน มีข้อมูลงบ)');
+}
+
+/* ตรวจคอลัมน์ส่วนสถานะรายหลังแบบยืดหยุ่น: รองรับทั้ง (ลำดับ,บ้านเลขที่,สถานะ,หมายเหตุ[,Lat,Long])
+   และไฟล์ทีม (ลำดับ,โครงการ,บ้านเลขที่,Lat,Long,สถานะ,ผู้รับผิดชอบ) */
+function detectHouseCols(block){
+  const W = Math.max.apply(null, block.map(r=>r.length).concat([0]));
+  const KEY = /ONU|ร้อยสาย|ท่อ|บ่อพัก|Terminate|Fiber|ลูกค้า|สำเร็จ|ติดตั้ง|ปล่อยสัญญาณ/i;
+  let st=-1, stScore=0;
+  for(let c=0;c<W;c++){
+    const sc = block.filter(r=> KEY.test(String(r[c]==null?'':r[c]))).length;
+    if(sc>stScore){ stScore=sc; st=c; }
+  }
+  let lat=-1;
+  for(let c=0;c<W-1;c++){
+    if(c===st) continue;
+    const ok = block.filter(r=>{ const a=+r[c], b=+r[c+1]; return a>4&&a<21&&b>96&&b<106; }).length;
+    if(ok > block.length*0.5){ lat=c; break; }
+  }
+  let addr=-1, aScore=-Infinity;
+  for(let c=0;c<W;c++){
+    if(c===st || c===lat || (lat>=0&&c===lat+1)) continue;
+    const vals = block.map(r=>String(r[c]==null?'':r[c]).trim()).filter(Boolean);
+    if(!vals.length) continue;
+    const slash = vals.filter(v=>/\d+\s*\/\s*\d+/.test(v)).length / vals.length;
+    const digit = vals.filter(v=>/\d/.test(v)).length / vals.length;
+    const runNo = vals.length>2 && vals.every((v,i)=> String((+vals[0])+i)===v);
+    const score = slash*3 + digit - (runNo?2:0);
+    if(score > aScore){ aScore=score; addr=c; }
+  }
+  if(addr<0) addr = 1;
+  let note=-1;
+  if(st>=0){
+    const cn = st+1;
+    if(cn<W && cn!==lat && cn!==lat+1 && cn!==addr) note=cn;
+  }
+  return {addr, st, lat, note};
+}
+
+/* ============ Master Excel: 1 sheet ต่อหมู่บ้าน (ข้อมูล+แผนงาน+BOQ+งบ) ============ */
+function exportMasterExcel(){
+  const vil = visibleVillages();
+  if(!vil.length){ toast('ยังไม่มีข้อมูล'); return; }
+  const wb = XLSX.utils.book_new();
+
+  /* ---------- SHEET 1: Progress (บรรทัดละหมู่บ้าน) ---------- */
+  const maxSteps = Math.max.apply(null, vil.map(v=>(v.tasks||[]).length).concat([9]));
+  const ph = ['โครงการ','Vendor','พอร์ต','เดินสายสำเร็จ (หลัง)','วันเริ่มงาน','กำหนดส่งมอบ','ความคืบหน้ารวม (%)','ปัญหา / อุปสรรค'];
+  for(let i=0;i<maxSteps;i++) ph.push('งาน'+(i+1)+' %');
+  const pAoa = [ph];
+  vil.forEach(v=>{
+    const row = [v.name, v.contractor||'', v.ports||'', v.homesDone||'', v.start||'', v.end||'', overall(v), v.issue||''];
+    for(let i=0;i<maxSteps;i++){ const t=(v.tasks||[])[i]; row.push(t? (+t.p||0):''); }
+    pAoa.push(row);
+  });
+  const wsP = XLSX.utils.aoa_to_sheet(pAoa);
+  wsP['!cols'] = [{wch:30},{wch:14},{wch:8},{wch:14},{wch:12},{wch:13},{wch:14},{wch:26}].concat(Array(maxSteps).fill({wch:8}));
+  wsP['!freeze'] = {xSplit:1, ySplit:1};
+  XLSX.utils.book_append_sheet(wb, wsP, 'Progress');
+  /* step-name legend below the table */
+  if(vil[0] && vil[0].tasks){
+    const lr = pAoa.length + 2;
+    XLSX.utils.sheet_add_aoa(wsP, [['ชื่อขั้นตอนงาน (อ้างอิงคอลัมน์ งานN %)']], {origin:'A'+lr});
+    vil[0].tasks.forEach((t,i)=> XLSX.utils.sheet_add_aoa(wsP, [['งาน'+(i+1), t.name]], {origin:'A'+(lr+1+i)}));
+  }
+
+  /* ---------- SHEET 2: BOQ (item ซ้าย · โครงการต่อขวาเป็นบล็อก 6 คอลัมน์) ---------- */
+  boqSheet(wb, vil);
+
+  /* ---------- SHEET 3: Unit (รายหลัง ทุกหมู่บ้านรวมกัน) ---------- */
+  const uHdr = ['no','โครงการ','บ้านเลขที่','Lat','Lot','status','Solution','Estimate price','Detail','VLC','OLT','ชื่อ Name','บ้านเลขที่ Address','เบอร์โทร Phone number','สนใจ/ไม่สนใจ'];
+  const uAoa = [uHdr];
+  let un=1;
+  vil.forEach(v=>{ (v.houses||[]).forEach(h=>{
+    uAoa.push([un++, v.name, h.no||'', h.lat||'', h.lng||'', h.st||'', h.sol||'', h.est||'', h.detail||'', h.vlc||'', h.olt||'', h.name||'', h.addr||'', h.phone||'', h.interest||'']);
+  }); });
+  const wsU = XLSX.utils.aoa_to_sheet(uAoa);
+  wsU['!cols'] = [{wch:6},{wch:30},{wch:12},{wch:11},{wch:11},{wch:26},{wch:12},{wch:14},{wch:30},{wch:8},{wch:8},{wch:16},{wch:16},{wch:16},{wch:14}];
+  wsU['!freeze'] = {xSplit:0, ySplit:1};
+  XLSX.utils.book_append_sheet(wb, wsU, 'Unit');
+
+  /* ---------- backup sheets (admin): accounts + vendor prices ---------- */
+  if(isAdmin() && B.vendors.length){
+    const used = new Set(['Progress','BOQ','Unit']);
+    const accAoa = [['Vendor','Username','Password']];
+    B.vendors.forEach(vd=> accAoa.push([vd.name, vd.user, vd.pass]));
+    const wsAcc = XLSX.utils.aoa_to_sheet(accAoa);
+    wsAcc['!cols'] = [{wch:22},{wch:16},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, wsAcc, 'บัญชีทั้งหมด');
+  }
+  XLSX.writeFile(wb, 'master-projects-' + todayISO() + '.xlsx');
+  toast('Export Master (3 sheet: Progress · BOQ · Unit) แล้ว');
+}
+
+/* สร้าง sheet BOQ: fix 4 คอลัมน์ซ้าย + บล็อก 6 คอลัมน์ต่อโครงการ พร้อมสูตร + เส้นแบ่ง */
+function boqSheet(wb, vil){
+  const jobsFor = v => villageJobs(v).filter(j=> isAdmin() || j.vendorId===session.vendorId);
+  const projs = vil.map(v=>({v, jb: jobsFor(v)[0]||null}));
+  const nItem = ITEMS.length;
+  const H1 = ['','','','FIX'];        // row 1: project name banner
+  const H2 = ['ลำดับ','หมวด','รายการ','หน่วย'];  // row 2: column labels
+  const blockCols = ['ราคา/หน่วย (โครงการนี้)','จำนวนตั้งงบ','งบประมาณ (บาท)','จำนวนที่ใช้แล้ว','ค่างานที่ใช้แล้ว (บาท)','งบคงเหลือ (บาท)'];
+  projs.forEach(pr=>{
+    H1.push(pr.v.name, '', '', '', '', '');
+    blockCols.forEach(c=>H2.push(c));
+  });
+  const aoa = [H1, H2];
+  ITEMS.forEach((it,idx)=>{
+    const row = [idx+1, it.s, (it.on||it.n), it.u];
+    projs.forEach(pr=>{
+      const jb = pr.jb;
+      const p  = (jb && jb.prices) ? jb.prices['i'+idx] : '';
+      const bq = (jb && jb.bqty) ? jb.bqty['i'+idx] : '';
+      const uq = (jb && jb.qty) ? jb.qty['i'+idx] : '';
+      row.push(p===undefined?'':p, bq===undefined?'':bq, '', uq===undefined?'':uq, '', '');
+    });
+    aoa.push(row);
+  });
+  const totalRow = ['','','รวมทั้งโครงการ',''];
+  projs.forEach(()=> totalRow.push('','','','','',''));
+  aoa.push(totalRow);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const colName = c => { let s=''; c++; while(c>0){ s=String.fromCharCode(65+(c-1)%26)+s; c=Math.floor((c-1)/26);} return s; };
+  const first = 3, last = 2 + nItem, trow = last + 1;
+  const cols = [{wch:6},{wch:22},{wch:48},{wch:7}];
+  const merges = [];
+  projs.forEach((pr,pi)=>{
+    const base = 4 + pi*6;                    // 0-indexed first col of this block
+    const cP=colName(base), cB=colName(base+1), cBud=colName(base+2), cU=colName(base+3), cUse=colName(base+4), cR=colName(base+5);
+    merges.push({s:{r:0,c:base}, e:{r:0,c:base+5}});   // merge project-name banner
+    for(let n=first;n<=last;n++){
+      ws[cBud+n] = {t:'n', f:'IF(OR('+cP+n+'="",'+cB+n+'=""),"",'+cP+n+'*'+cB+n+')'};
+      ws[cUse+n] = {t:'n', f:'IF(OR('+cP+n+'="",'+cU+n+'=""),"",'+cP+n+'*'+cU+n+')'};
+      ws[cR+n]   = {t:'n', f:'IF('+cBud+n+'="","",'+cBud+n+'-IF('+cUse+n+'="",0,'+cUse+n+'))'};
+    }
+    ws[cBud+trow] = {t:'n', f:'SUM('+cBud+first+':'+cBud+last+')'};
+    ws[cUse+trow] = {t:'n', f:'SUM('+cUse+first+':'+cUse+last+')'};
+    ws[cR+trow]   = {t:'n', f:'SUM('+cR+first+':'+cR+last+')'};
+    cols.push({wch:13},{wch:11},{wch:14},{wch:12},{wch:16},{wch:14});
+    // thick left border to separate projects
+    for(let n=1;n<=trow;n++){
+      const cell = ws[cP+n]; if(cell){ cell.s = cell.s||{}; cell.s.border = {left:{style:'medium',color:{rgb:'0F3D24'}}}; }
+    }
+  });
+  ws['!cols'] = cols;
+  ws['!merges'] = merges;
+  ws['!freeze'] = {xSplit:4, ySplit:2};
+  XLSX.utils.book_append_sheet(wb, ws, 'BOQ');
+}
+
+/* ============ อ่านไฟล์ Master 3-sheet กลับเข้าโปรแกรม ============ */
+function importMaster3(wb){
+  const hasP = wb.SheetNames.includes('Progress');
+  const hasB = wb.SheetNames.includes('BOQ');
+  const hasU = wb.SheetNames.includes('Unit');
+  if(!hasP && !hasB && !hasU) return false;
+  const nameIdx = {}; ITEMS.forEach((it,i)=> nameIdx[it.n.trim()] = i);
+
+  /* Progress sheet */
+  const pa = hasP ? XLSX.utils.sheet_to_json(wb.Sheets['Progress'], {header:1, defval:''}) : [];
+  const ph = (pa[0]||[]).map(String);
+  const stepCols = [];
+  ph.forEach((h,i)=>{ const m=/^งาน(\d+)/.exec(h); if(m) stepCols.push({i, n:+m[1]}); });
+  const byName = {};
+  for(let r=1;r<pa.length;r++){
+    const row = pa[r];
+    const nm = String(row[0]||'').trim();
+    if(!nm || nm.startsWith('ชื่อขั้นตอน') || /^งาน\d+$/.test(nm)) continue;
+    let v = state.villages.find(x=>x.name.trim()===nm);
+    const contractor = String(row[1]||'');
+    const mv = B.vendors.find(x=>x.name.trim()===contractor.trim());
+    if(!v){ v = {id:uid(), name:nm, contractor, vendorId:mv?mv.id:null, ports:'', homesDone:'', start:'', end:'', issue:'', tasks:TEMPLATE.map(t=>({id:uid(),name:t.name,w:t.w,p:0,note:''})), houses:[]}; state.villages.push(v); }
+    v.contractor = contractor; if(mv) v.vendorId = mv.id;
+    v.ports = row[2]||''; v.homesDone = row[3]||'';
+    v.start = cellDate(row[4]); v.end = cellDate(row[5]);
+    v.issue = String(row[7]||'');
+    stepCols.forEach(sc=>{ if(v.tasks[sc.n-1] && row[sc.i]!=='' && row[sc.i]!=null) v.tasks[sc.n-1].p = Math.max(0,Math.min(100,+row[sc.i]||0)); });
+    byName[nm] = v;
+    if(!B.jobs.some(j=>j.villageId===v.id)) B.jobs.push({id:uid(), name:nm, villageId:v.id, vendorId:v.vendorId||'', budget:'', qty:{}, bqty:{}, prices:{}, date:todayISO()});
+  }
+
+  /* BOQ sheet: read project blocks by banner row */
+  const ba = hasB ? XLSX.utils.sheet_to_json(wb.Sheets['BOQ'], {header:1, defval:''}) : [];
+  const banner = ba[0]||[]; const labels = ba[1]||[];
+  const blocks = [];
+  for(let c=4;c<banner.length;c++){
+    if(String(banner[c]).trim()){ blocks.push({name:String(banner[c]).trim(), c}); }
+  }
+  blocks.forEach(bl=>{
+    const v = byName[bl.name] || state.villages.find(x=>x.name.trim()===bl.name);
+    if(!v) return;
+    let jb = B.jobs.find(j=>j.villageId===v.id);
+    if(!jb){ jb={id:uid(),name:v.name,villageId:v.id,vendorId:v.vendorId||'',budget:'',qty:{},bqty:{},prices:{},date:todayISO()}; B.jobs.push(jb); }
+    jb.prices=jb.prices||{}; jb.bqty=jb.bqty||{}; jb.qty=jb.qty||{};
+    for(let r=2;r<ba.length;r++){
+      const row = ba[r];
+      const nm = String(row[2]||'').trim();
+      if(!nm || nameIdx[nm]==null) continue;
+      const k='i'+nameIdx[nm];
+      const p=+row[bl.c], bq=+row[bl.c+1], uq=+row[bl.c+3];
+      if(!isNaN(p) && row[bl.c]!=='' && p>=0) jb.prices[k]=p; else delete jb.prices[k];
+      if(bq>0) jb.bqty[k]=bq; else delete jb.bqty[k];
+      if(uq>0) jb.qty[k]=uq; else delete jb.qty[k];
+    }
+  });
+
+  /* Unit sheet → houses per village (แหล่งหลักของสถานะรายหลัง) */
+  if(wb.SheetNames.includes('Unit')){
+    const ua = XLSX.utils.sheet_to_json(wb.Sheets['Unit'], {header:1, defval:''});
+    const uh = (ua[0]||[]).map(x=>String(x).toLowerCase());
+    const col = (...keys)=>{ for(const key of keys){ const i=uh.findIndex(h=>h.includes(key)); if(i>=0) return i; } return -1; };
+    const cVil=col('โครงการ'), cNo=col('บ้านเลขที่','address'), cLat=col('lat'), cLng=col('lot','lng','long'),
+          cSt=col('status','สถานะ'), cSol=col('solution'), cEst=col('estimate'), cDet=col('detail'),
+          cVlc=col('vlc'), cOlt=col('olt'), cName=col('name','ชื่อ'), cPhone=col('phone','เบอร์'), cInt=col('สนใจ','interest');
+    const grouped = {};
+    for(let r=1;r<ua.length;r++){
+      const row = ua[r];
+      const vil = String(row[cVil]||'').trim(); if(!vil) continue;
+      (grouped[vil]=grouped[vil]||[]).push({
+        no:String(row[cNo]||'').trim(), lat:cLat>=0?(+row[cLat]||''):'', lng:cLng>=0?(+row[cLng]||''):'',
+        st:cSt>=0?String(row[cSt]||'').trim():'', sol:cSol>=0?String(row[cSol]||''):'', est:cEst>=0?String(row[cEst]||''):'',
+        detail:cDet>=0?String(row[cDet]||''):'', vlc:cVlc>=0?String(row[cVlc]||''):'', olt:cOlt>=0?String(row[cOlt]||''):'',
+        name:cName>=0?String(row[cName]||''):'', phone:cPhone>=0?String(row[cPhone]||''):'', interest:cInt>=0?String(row[cInt]||''):''
+      });
+    }
+    Object.keys(grouped).forEach(vil=>{
+      let v = state.villages.find(x=>x.name.trim()===vil.trim()) || byName[vil];
+      if(!v){ v={id:uid(),name:vil,contractor:'',vendorId:null,ports:'',homesDone:'',start:'',end:'',issue:'',tasks:TEMPLATE.map(t=>({id:uid(),name:t.name,w:t.w,p:0,note:''})),houses:[]}; state.villages.push(v); if(!B.jobs.some(j=>j.villageId===v.id)) B.jobs.push({id:uid(),name:vil,villageId:v.id,vendorId:'',budget:'',qty:{},bqty:{},prices:{},date:todayISO()}); }
+      v.houses = grouped[vil];
+      v.homesDone = grouped[vil].filter(h=> h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'')).length;
+    });
+  }
+  return true;
+}
+
+function parseAccountSheet(wb){
+  const sn = wb.SheetNames.find(x=>x==='บัญชี');
+  if(!sn) return null;
+  const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:''});
+  const m = {}; aoa.forEach(r=>{ if(r && r[0]!=='') m[String(r[0])] = String(r[1]||''); });
+  if(!m['Username'] || !m['Password']) return null;
+  return {user:m['Username'], pass:m['Password'], name:m['Vendor']||m['Username']};
+}
+
+/* ================= LINE export ================= */
+function lineText(v){
+  const p = overall(v);
+  const L = [];
+  L.push('📡 รายงานความคืบหน้า AIS Fibre');
+  L.push('🏘️ ' + v.name);
+  if(v.contractor) L.push('👷 ผู้รับเหมา: ' + v.contractor + (v.ports? ' ('+v.ports+' พอร์ต)':''));
+  L.push('📅 อัปเดต: ' + thDate(todayISO()));
+  L.push('');
+  L.push('ภาพรวม ' + p + '%');
+  L.push(emojiBar(p));
+  if(+v.homesDone || +v.ports) L.push('🏠 เดินสายเข้าบ้านสำเร็จ ' + (+v.homesDone||0) + (+v.ports?'/'+v.ports:'') + ' หลัง');
+  L.push('');
+  v.tasks.forEach(t=>{
+    L.push(taskIcon(+t.p) + ' ' + t.name + ' — ' + t.p + '%' + (t.note? ' ('+t.note+')':''));
+  });
+  if(v.issue){ L.push(''); L.push('⚠️ ปัญหา: ' + v.issue); }
+  if(v.end){ L.push('🎯 กำหนดส่งมอบ: ' + thDate(v.end)); }
+  return L.join('\n');
+}
+function copyLine(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  const txt = lineText(v);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('คัดลอกแล้ว วางในกลุ่ม LINE ได้เลย'))
+      .catch(()=>fallbackCopy(txt));
+  } else fallbackCopy(txt);
+}
+function fallbackCopy(txt){
+  const ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); document.body.removeChild(ta);
+  toast('คัดลอกแล้ว วางในกลุ่ม LINE ได้เลย');
+}
+function savePNG(vid){
+  const v = state.villages.find(v=>v.id===vid);
+  const card = $('reportCard');
+  toast('กำลังสร้างรูป...');
+  html2canvas(card,{scale:2,backgroundColor:null}).then(canvas=>{
+    const a = document.createElement('a');
+    a.download = 'progress-' + v.name.replace(/\s+/g,'-') + '-' + todayISO() + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('บันทึกรูปแล้ว ส่งเข้ากลุ่ม LINE ได้เลย');
+  }).catch(()=>toast('สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง'));
+}
+
+/* ================= Init ================= */
+(async function(){
+  await restore();
+})();
+
+/* ================= BOQ Budget module ================= */
+const ITEMS = [{"s":"Cabinet & Material for Cabinet","n":"ODF 32F Outdoor Wall Mount without Splitter Modular (Max. 5 Slot)","u":"Set","p":0,"on":"ODF 32F Outdoor Wall Mount without Splitter Modular (Max. 5 Slot) "},{"s":"Cabinet & Material for Cabinet","n":"ODF 72F Outdoor Wall Mount without Splitter Modular (Max. 10 Slot)","u":"Set","p":0,"on":"ODF 72F Outdoor Wall Mount without Splitter Modular (Max. 10 Slot) "},{"s":"Cabinet & Material for Cabinet","n":"ODF 144F Outdoor Wall Mount without Splitter Modular (Max. 20 Slot)","u":"Set","p":0,"on":"ODF 144F Outdoor Wall Mount without Splitter Modular (Max. 20 Slot) "},{"s":"Cabinet & Material for Cabinet","n":"ODF 288F Outdoor Wall Mount without Splitter Modular (Max. 40 Slot)","u":"Set","p":0,"on":"ODF 288F Outdoor Wall Mount without Splitter Modular (Max. 40 Slot) "},{"s":"Cabinet & Material for Cabinet","n":"ODF 72F Outdoor On Ground without Splitter Modular (Max. 10 Slot)","u":"EA","p":0,"on":"ODF 72F Outdoor On Ground without Splitter Modular (Max. 10 Slot) "},{"s":"Cabinet & Material for Cabinet","n":"CONC BASE FOUNDATION WITH GROUND WIRE FOR ODF 72F OUTDOOR  ON GROUND TYPE","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"ODF 600F OUTDOOR CABINET FOR ISP","u":"Rack","p":0},{"s":"Cabinet & Material for Cabinet","n":"ODF 120F 4U RACK MOUNT FOR ODF 600F OUTDOOR CABINET","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"ODF 24F 1U RACK MOUNT FOR ODF 600F OUTDOOR CABINET","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Install ODF 600F OUTDOOR CABINET FOR ISP (AWN Provide and Delivery ODF 600F OUTDOOR FOR ISP To Site)","u":"EA","p":0,"on":"Install ODF 600F OUTDOOR CABINET FOR ISP (AWN Provide and Delivery ODF 600F OUTDOOR FOR ISP To Site) "},{"s":"Cabinet & Material for Cabinet","n":"CONC BASE FOUNDATION WITH GROUND WIRE FOR ODF 600F OUTDOOR CABINT FOR ISP","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Splitter Modular 1:4 in Cabinet","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Splitter Modular 1:8 in Cabinet","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Splitter Modular 1:16 in Cabinet","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Panel 8S with adapter","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Pole mount closure with splitter 1:8 Level 1 (Outdoor type)","u":"Set","p":0},{"s":"Cabinet & Material for Cabinet","n":"Pole mount closure with splitter 1:8 Level 2 (Outdoor type)","u":"Set","p":0},{"s":"Cabinet & Material for Cabinet","n":"Pole mount closure with splitter 1:16 Level 2 (Outdoor type)","u":"Set","p":0},{"s":"Cabinet & Material for Cabinet","n":"RISER POLE Support Pole Mount Splitter","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Fiber Patch Cord (SC/APC -SC/APC) Simplex 1M","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Fiber Patch Cord (SC/APC -SC/APC) Simplex 1.5M","u":"EA","p":0},{"s":"Cabinet & Material for Cabinet","n":"Fiber Patch Cord (SC/APC -SC/APC) Simplex 3M","u":"EA","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-A Aerial Cable ADSS Type 24C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-A Aerial Cable ADSS Type 48C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-A Aerial Cable ADSS Type 120C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-A Aerial Cable ADSS-M Type 12C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ADSS Install in Duct Type 12C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ADSS Install in Duct Type 24C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ADSS Install in Duct Type 48C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ADSS Install in Duct Type 120C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ARSS Install in Duct Type 12C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ARSS Install in Duct Type 24C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ARSS Install in Duct Type 48C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-Flame Retardant-AD Aerial Cable ARSS Install in Duct Type 120C","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-D Duct Cable Install in Duct Type 12c","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-D Duct Cable Install in Duct Type 24c","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-D Duct Cable Install in Duct Type 48c","u":"M","p":0},{"s":"OPTICAL FIBER CABLE","n":"SM-D Duct Cable Install in Duct Type 120c","u":"M","p":0},{"s":"CLOSURE include splicing service","n":"Duct Branch Joint 12c Support Duct Cable Lastmile","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Duct Branch Joint 24c  Support Duct Cable Lastmile","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Duct Branch Joint 48c Support Duct Cable Lastmile","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Duct Branch Joint 120c  Support Duct Cable Lastmile","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Fusion Splice Through 12F @ BJ Closure/Point","u":"Set","p":0},{"s":"CLOSURE include splicing service","n":"Fusion Splice Through 24F @ BJ Closure/Point","u":"Set","p":0},{"s":"CLOSURE include splicing service","n":"Fusion Splice Through 48F @ BJ Closure/Point","u":"Set","p":0},{"s":"CLOSURE include splicing service","n":"Fusion Splice Through 120F @ BJ Closure/Point","u":"Set","p":0},{"s":"CLOSURE include splicing service","n":"Optical Drop Point 8 ports Closure","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Optcial Drop Point 16 ports Clousure","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:4 Level 1","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:8 Level 1","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:16 Level 1","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:4 Level 2","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:8 Level 2","u":"EA","p":0},{"s":"CLOSURE include splicing service","n":"Aerial closure with splitter 1:16 Level 2 (Long Closure)","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 1C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 2C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 3C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 4C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 5C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 6C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 7C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 8C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 9C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 10C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 11C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 12C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 24C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service (Include Pigtail) 48C","u":"EA","p":0},{"s":"Terminate service","n":"Terminate service  (Include Pigtail) 120C","u":"EA","p":0},{"s":"Civil Work","n":"A8 Concrete Pole","u":"EA","p":0},{"s":"Civil Work","n":"Flex Conduit Rain Tight  Ø  1/2\"","u":"m","p":0},{"s":"Civil Work","n":"Flex Conduit Rain Tight  Ø  3/4\"","u":"m","p":0},{"s":"Civil Work","n":"Flex Conduit Rain Tight  Ø  1\"","u":"m","p":0},{"s":"Civil Work","n":"Flex Conduit Ø  1/2\"","u":"m","p":0},{"s":"Civil Work","n":"Flex Conduit Ø  3/4\"","u":"m","p":0},{"s":"Civil Work","n":"Flex Conduit Ø  1\"","u":"m","p":0},{"s":"Civil Work","n":"I.M.C. Conduit  Ø  1/2\"","u":"M","p":0},{"s":"Civil Work","n":"I.M.C. Conduit  Ø  3/4\"","u":"M","p":0},{"s":"Civil Work","n":"I.M.C. Conduit  Ø  1\"","u":"M","p":0},{"s":"Civil Work","n":"uPVC Conduit 1-Ø 1/2\"","u":"M","p":0},{"s":"Civil Work","n":"uPVC Conduit 1-Ø 3/4\"","u":"M","p":0},{"s":"Civil Work","n":"uPVC Conduit 1-Ø 1\"","u":"M","p":0},{"s":"Civil Work","n":"PVC Conduit 1-Ø 1/2\"","u":"M","p":0},{"s":"Civil Work","n":"PVC Conduit 1-Ø 3/4\"","u":"M","p":0},{"s":"Civil Work","n":"PVC Conduit 1-Ø 1\"","u":"M","p":0},{"s":"Civil Work","n":"HDPE Conduit 1-Ø 1/2\"","u":"M","p":0},{"s":"Civil Work","n":"HDPE Conduit 1-Ø 3/4\"","u":"M","p":0},{"s":"Civil Work","n":"HDPE Conduit 1-Ø 1\"","u":"M","p":0},{"s":"Civil Work","n":"HDPE Conduit 1-Ø 2\"","u":"M","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Open Cut Road Concrete and repair","u":"M","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"BREAK THROGH PB.","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 4\"x4\"x4\" Galvanized","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 6\"x6\"x4\" Galvanized","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 10\"x10\"x6\" Galvanized","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 12\"x12\"x6\" Galvanized","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 4\"x4\"x4\" Plastic","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 6\"x6\"x4\" Plastic","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 10\"x10\"x6\" Plastic","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"Pull Box size 12\"x12\"x6\" Plastic","u":"EA","p":0},{"s":"Accessories Conduit อุปกรณ์จับยึด (อยู่ในค่าท่อ)","n":"HH-01 CONC","u":"EA","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Flat Type Install in Duct Type 1C","u":"M","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Flat Type Install in Duct Type 2C","u":"M","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Round Type Install in Duct Type 1C","u":"M","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Round Type Install in Duct Type 2C","u":"M","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Armoured Round Type Install in Duct Type 1C","u":"M","p":0},{"s":"Lastmile","n":"SM-AD Aerial Cable Dropwire Armoured Round Type Install in Duct Type 2C","u":"M","p":0},{"s":"Lastmile","n":"SM-D Duct Cable Dropwire Flat Type Install in Duct Type 1C","u":"M","p":0},{"s":"Lastmile","n":"SM-D Duct Cable Dropwire Flat Type Install in Duct Type 2C","u":"M","p":0},{"s":"Lastmile","n":"Terminal Box Outlet 1C with Adapter SC/APC include SC/APC Pigtail","u":"EA","p":0},{"s":"Lastmile","n":"Terminal Box Outlet 2C with Adapter SC/APC include SC/APC Pigtail","u":"EA","p":0},{"s":"Lastmile","n":"Terminal Box Face Plate","u":"EA","p":0},{"s":"Lastmile","n":"Fusion Splice Terminate @House with SC/APC Pigtail","u":"Set","p":0},{"s":"Lastmile","n":"Splice core fiber drop wire","u":"Core","p":0},{"s":"Lastmile","n":"break sewer to Post Box","u":"Set","p":0},{"s":"Management Fee & OTHER","n":"Survey & Drawings","u":"L.S.","p":0},{"s":"Management Fee & OTHER","n":"IGIS","u":"L.S.","p":0},{"s":"Management Fee & OTHER","n":"Test & Document Report","u":"L.S.","p":0},{"s":"Management Fee & OTHER","n":"Accessories","u":"L.S.","p":0},{"s":"Management Fee & OTHER","n":"Management","u":"units","p":0}];
+
+const LS = 'ftth-boq-budget';
+let B = { adminUser:'FTTH', adminPass:'FTTHBBODN', vendors:[], jobs:[] };
+let session = { role:null, vendorId:null }; // role: 'admin' | 'vendor'
+let ui = { tab:'jobs', vendorSel:null, jobSel:null, q:'' , qtyOnly:false };
+
+/* ===== persistence ===== */
+function bqPersist(){ try{ localStorage.setItem(LS, JSON.stringify(B)); }catch(e){} cloudQueue(); }
+function bqRestore(){
+  try{ const s=localStorage.getItem(LS); if(s) B=JSON.parse(s); }catch(e){}
+  B = B || {};
+  B.vendors = (B.vendors||[]).filter(Boolean);
+  B.jobs = (B.jobs||[]).filter(Boolean);
+  B.jobs.forEach(j=>{ j.qty = j.qty||{}; j.prices = j.prices||{}; j.bqty = j.bqty||{}; });
+  if(!B.adminUser) B.adminUser = 'FTTH';
+  if(!B.adminPass) B.adminPass = 'FTTHBBODN';
+  (B.vendors||[]).forEach(v=>{
+    if(!v.user) v.user = v.name;
+    if(!v.pass) v.pass = v.pin || '';
+  });
+}
+
+function fmt(n){ return (Math.round((+n||0)*100)/100).toLocaleString('th-TH'); }
+
+function vendorById(id){ return B.vendors.find(v=>v.id===id); }
+function priceOf(vendor, idx){
+  if(!ITEMS[idx]) return 0;
+  if(vendor && vendor.prices && vendor.prices['i'+idx] != null && vendor.prices['i'+idx] !== '') return +vendor.prices['i'+idx];
+  return 0;
+}
+function jobPrice(job, idx){
+  if(job && job.prices && job.prices['i'+idx] != null && job.prices['i'+idx] !== '') return +job.prices['i'+idx];
+  return priceOf(vendorById(job.vendorId), idx);
+}
+function jobBudget(job){
+  if(!job) return 0;
+  let has=false, t=0;
+  Object.keys(job.bqty||{}).forEach(k=>{
+    const idx = +k.slice(1);
+    if(!ITEMS[idx]) return;
+    const q = +job.bqty[k]||0;
+    if(q>0){ has=true; t += q * jobPrice(job, idx); }
+  });
+  return has ? t : (+job.budget||0);
+}
+function setBQty(jid, idx, val){
+  const job = B.jobs.find(j=>j.id===jid); if(!job) return;
+  job.bqty = job.bqty || {};
+  if(val==='' || +val===0) delete job.bqty['i'+idx];
+  else job.bqty['i'+idx] = +val;
+  bqPersist();
+  refreshJobTotals(job);
+}
+function refreshJobTotals(job){
+  const bud = jobBudget(job), cost = jobCost(job);
+  const g1=$('grandBudget'), g2=$('grandTotal'), g3=$('grandRemain');
+  if(g1) g1.textContent = fmt(bud);
+  if(g2) g2.textContent = fmt(cost);
+  if(g3){ g3.textContent = fmt(bud-cost); g3.style.color = (bud && cost>bud)? '#FF9B9B' : ''; }
+}
+function jobCost(job){
+  let t = 0;
+  Object.keys(job.qty||{}).forEach(k=>{
+    const idx = +k.slice(1);
+    if(!ITEMS[idx]) return;
+    t += (+job.qty[k]||0) * jobPrice(job, idx);
+  });
+  return t;
+}
+function setJobPrice(jid, idx, val){
+  const job = B.jobs.find(j=>j.id===jid); if(!job) return;
+  job.prices = job.prices || {};
+  if(val === '') delete job.prices['i'+idx];
+  else job.prices['i'+idx] = +val;
+  bqPersist();
+  refreshItemList();
+  refreshJobTotals(job);
+}
+
+/* ===== bqRender root ===== */
+function bqRender(){
+  if(!session.role){ logout(); return; }
+  const isAdmin = session.role==='admin';
+  const vName = isAdmin ? 'ผู้ดูแล (AIS)' : (vendorById(session.vendorId)||{}).name || 'Vendor';
+  let tabs;
+  if(isAdmin){
+    tabs = [['jobs','งาน / BOQ'],['summary','สรุปงบ']];
+  } else {
+    tabs = [['jobs','งานของฉัน']];
+  }
+  $('modeBoq').innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 10px;gap:8px">
+    <span class="role-chip" style="background:#EAF3DD;color:var(--forest);border:1px solid var(--line)">👤 ${esc(vName)}</span>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">ออกจากระบบ</button>
+  </div>
+  <div>
+    <div class="tabs">${tabs.map(t=>`<button class="tab ${ui.tab===t[0]?'on':''}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join('')}</div>
+    <div id="tabBody"></div>
+  </div>`;
+  const el = $('tabBody');
+  if(ui.tab==='vendors') el.innerHTML = viewVendors();
+  else if(ui.tab==='prices') el.innerHTML = viewPrices();
+  else if(ui.tab==='summary') el.innerHTML = viewSummary();
+  else el.innerHTML = viewJobs();
+}
+function setTab(t){ ui.tab=t; ui.q=''; bqRender(); }
+function logout(){
+  realSession = null;
+  const pb = document.getElementById('previewBar'); if(pb) pb.remove();
+  if(cloudOn && sb){ try{ sb.auth.signOut(); }catch(e){} cloudUser=null; }
+  session={role:null,vendorId:null};
+  $('appShell').style.display='none';
+  $('loginGate').style.display='';
+  renderLogin();
+}
+function enterApp(role, vendorId){
+  session={role, vendorId};
+  migrateVendorIds();
+  $('loginGate').style.display='';
+  $('loginGate').innerHTML='';
+  $('loginGate').style.display='none';
+  $('appShell').style.display='';
+  ui.tab='jobs';
+  $('mbVendor').style.display = isAdmin() ? '' : 'none';
+  switchMode('dash');
+}
+function migrateVendorIds(){
+  let ch=false;
+  B.jobs.forEach(j=>{
+    if(!j.villageId){
+      const m = state.villages.find(x=>x.name.trim()===String(j.name||'').trim());
+      if(m){ j.villageId = m.id; ch=true; }
+    }
+  });
+  state.villages.forEach(v=>{
+    if(!B.jobs.some(j=>j.villageId===v.id)){
+      B.jobs.push({id:uid(), name:v.name, villageId:v.id, vendorId:v.vendorId||'', budget:'', qty:{}, prices:{}, date:todayISO()});
+      ch=true;
+    }
+  });
+  state.villages.forEach(v=>{
+    if(!v.vendorId && v.contractor){
+      const m=B.vendors.find(x=>x.name.trim()===v.contractor.trim());
+      if(m){ v.vendorId=m.id; ch=true; }
+    }
+  });
+  if(ch){ persist(); bqPersist(); }
+}
+function isAdmin(){ return session.role==='admin'; }
+
+/* ===== โหมดพรีวิว: admin ดูหน้าจอแบบที่ผรม.เห็น ===== */
+let realSession = null;
+function previewAs(vendorId, vname){
+  if(!isAdmin() && !realSession) return;
+  if(!realSession) realSession = { role:session.role, vendorId:session.vendorId };
+  session = { role:'vendor', vendorId:vendorId };
+  ui.jobSel = null; ui.dashVendor = null; currentId = null;
+  showPreviewBar(vname);
+  $('mbVendor').style.display = 'none';
+  switchMode('dash');
+  toast('กำลังดูแบบ ' + vname);
+}
+function exitPreview(){
+  if(!realSession) return;
+  session = { role:realSession.role, vendorId:realSession.vendorId };
+  realSession = null;
+  const bar = document.getElementById('previewBar'); if(bar) bar.remove();
+  ui.jobSel = null; currentId = null;
+  $('mbVendor').style.display = '';
+  switchMode('vendor');
+  toast('กลับสู่โหมดผู้ดูแล');
+}
+function showPreviewBar(vname){
+  let bar = document.getElementById('previewBar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'previewBar';
+    bar.style.cssText = 'position:sticky;top:0;z-index:60;background:var(--amber);color:#3B2A00;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15)';
+    const shell = document.getElementById('appShell');
+    shell.insertBefore(bar, shell.firstChild);
+  }
+  bar.innerHTML = '<span>👁️ กำลังดูแบบผู้รับเหมา: ' + esc(vname) + ' (ดูอย่างเดียว อย่าแก้ข้อมูล)</span>' +
+                  '<button class="btn btn-sm" style="background:var(--forest);color:#fff;white-space:nowrap" onclick="exitPreview()">✕ กลับเป็นผู้ดูแล</button>';
+}
+function setContractor(vid, val){
+  const v = state.villages.find(v=>v.id===vid); if(!v) return;
+  v.contractor = val;
+  const m = B.vendors.find(x=>x.name.trim()===val.trim());
+  v.vendorId = m ? m.id : null;
+  B.jobs.filter(j=>j.villageId===vid).forEach(j=>{ j.vendorId = v.vendorId || ''; });
+  bqPersist();
+  persist(); refreshSummary(v);
+}
+function myVendorName(){ const v=vendorById(session.vendorId); return v? v.name:''; }
+function visibleVillages(){
+  if(isAdmin()) return state.villages;
+  const nm = myVendorName().trim();
+  return state.villages.filter(v=> v.vendorId===session.vendorId || (v.contractor||'').trim()===nm);
+}
+
+/* ================= ☁️ Cloud sync engine ================= */
+let cloudSaveTimer = null, cloudDirty = false;
+function cloudQueue(){
+  if(!cloudOn || !cloudUser) return;
+  cloudDirty = true;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(cloudPush, 1200);
+  const dot = document.getElementById('syncDot'); if(dot){ dot.textContent='⏳'; dot.title='กำลังบันทึกขึ้น cloud...'; }
+}
+function jTasks(v){ return v.tasks||[]; }
+async function cloudPush(){
+  if(!cloudOn || !cloudUser || !cloudDirty) return;
+  cloudDirty = false;
+  const dot = document.getElementById('syncDot'); if(dot){ dot.textContent='☁️'; dot.title='กำลังซิงค์...'; }
+  try{
+    /* vendors (admin เท่านั้นที่มีสิทธิ์เขียนทุกราย) */
+    if(isAdmin()){
+      for(const v of B.vendors){
+        await sb.from('vendors').upsert({ id:v.cloudId||undefined, name:v.name, prices:v.prices||{} }, {onConflict:'id'}).then(r=>{ if(r.data&&r.data[0]) v.cloudId=r.data[0].id; });
+      }
+    }
+    /* villages + jobs + houses (เฉพาะที่เห็นได้ตาม RLS) */
+    for(const v of visibleVillages()){
+      const vrow = { id:v.cloudId||undefined, name:v.name, contractor:v.contractor||'', vendor_id: vendorCloudId(v.vendorId), ports:String(v.ports||''), homes_done:+v.homesDone||0, start_date:v.start||'', end_date:v.end||'', issue:v.issue||'', tasks:jTasks(v), updated_at:new Date().toISOString() };
+      const { data } = await sb.from('villages').upsert(vrow, {onConflict:'id'}).select('id').single();
+      if(data){ v.cloudId = data.id; }
+      const jb = B.jobs.find(j=>j.villageId===v.id);
+      if(jb && v.cloudId){
+        const jrow = { id:jb.cloudId||undefined, village_id:v.cloudId, vendor_id:vendorCloudId(jb.vendorId), prices:jb.prices||{}, bqty:jb.bqty||{}, qty:jb.qty||{}, updated_at:new Date().toISOString() };
+        const { data:jd } = await sb.from('boq_jobs').upsert(jrow, {onConflict:'id'}).select('id').single();
+        if(jd) jb.cloudId = jd.id;
+      }
+    }
+    persistLocalOnly();
+    if(dot){ dot.textContent='✅'; dot.title='ซิงค์แล้ว'; setTimeout(()=>{ if(dot&&!cloudDirty){dot.textContent='☁️';dot.title='เชื่อม cloud';} },1500); }
+  }catch(e){
+    if(dot){ dot.textContent='⚠️'; dot.title='ซิงค์ไม่สำเร็จ: '+e.message; }
+    cloudDirty = true;
+  }
+}
+function vendorCloudId(localVid){
+  const v = B.vendors.find(x=>x.id===localVid); return v && v.cloudId ? v.cloudId : null;
+}
+function persistLocalOnly(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); localStorage.setItem(LS, JSON.stringify(B)); }catch(e){}
+}
+async function cloudPull(){
+  if(!cloudOn || !cloudUser) return;
+  const dot = document.getElementById('syncDot'); if(dot){ dot.textContent='⬇️'; dot.title='กำลังโหลดจาก cloud...'; }
+  try{
+    const { data:vends } = await sb.from('vendors').select('*');
+    const { data:vils } = await sb.from('villages').select('*');
+    const { data:jobs } = await sb.from('boq_jobs').select('*');
+    const { data:hs } = await sb.from('houses').select('*');
+    if(vends){
+      B.vendors = vends.filter(x=>!x.is_admin).map(x=>({ id:x.id, cloudId:x.id, name:x.name, user:'', pass:'', prices:x.prices||{} }));
+    }
+    const houseBy = {};
+    (hs||[]).forEach(h=>{ (houseBy[h.village_id]=houseBy[h.village_id]||[]).push({ no:h.no, st:h.status, lat:h.lat||'', lng:h.lng||'', sol:h.solution, est:h.estimate, detail:h.detail, vlc:h.vlc, olt:h.olt, name:h.cust_name, addr:h.cust_addr, phone:h.cust_phone, interest:h.interest }); });
+    state.villages = (vils||[]).map(v=>({ id:v.id, cloudId:v.id, name:v.name, contractor:v.contractor||'', vendorId:v.vendor_id, ports:v.ports||'', homesDone:v.homes_done||0, start:v.start_date||'', end:v.end_date||'', issue:v.issue||'', tasks:v.tasks||[], houses:houseBy[v.id]||[] }));
+    B.jobs = (jobs||[]).map(j=>({ id:j.id, cloudId:j.id, villageId:j.village_id, vendorId:j.vendor_id, prices:j.prices||{}, bqty:j.bqty||{}, qty:j.qty||{} }));
+    persistLocalOnly();
+    if(session.role) render();
+    if(dot){ dot.textContent='✅'; dot.title='โหลดจาก cloud แล้ว'; setTimeout(()=>{ if(dot){dot.textContent='☁️';dot.title='เชื่อม cloud';} },1500); }
+    toast('โหลดข้อมูลจาก cloud แล้ว');
+  }catch(e){ if(dot){ dot.textContent='⚠️'; dot.title='โหลดไม่สำเร็จ'; } }
+}
+/* อัปโหลดข้อมูลในเครื่องขึ้น cloud ครั้งแรก (รวม houses) */
+async function cloudSeedFromLocal(){
+  if(!cloudOn || !cloudUser){ toast('ยังไม่ได้ตั้งค่า cloud'); return; }
+  if(!confirm('อัปโหลดข้อมูลในเครื่องทั้งหมดขึ้น cloud? (ใช้ครั้งแรกครั้งเดียว)')) return;
+  toast('กำลังอัปโหลดขึ้น cloud...');
+  try{
+    for(const vd of B.vendors){
+      const { data } = await sb.from('vendors').upsert({ id:vd.cloudId||undefined, name:vd.name, prices:vd.prices||{} }, {onConflict:'id'}).select('id').single();
+      if(data) vd.cloudId = data.id;
+    }
+    for(const v of state.villages){
+      const { data } = await sb.from('villages').upsert({ id:v.cloudId||undefined, name:v.name, contractor:v.contractor||'', vendor_id:vendorCloudId(v.vendorId), ports:String(v.ports||''), homes_done:+v.homesDone||0, start_date:v.start||'', end_date:v.end||'', issue:v.issue||'', tasks:v.tasks||[] }, {onConflict:'id'}).select('id').single();
+      if(data){
+        v.cloudId = data.id;
+        if((v.houses||[]).length){
+          await sb.from('houses').delete().eq('village_id', v.cloudId);
+          const rows = v.houses.map(h=>({ village_id:v.cloudId, no:h.no||'', status:h.st||'', lat:h.lat||null, lng:h.lng||null, solution:h.sol||'', estimate:h.est||'', detail:h.detail||'', vlc:h.vlc||'', olt:h.olt||'', cust_name:h.name||'', cust_addr:h.addr||'', cust_phone:h.phone||'', interest:h.interest||'' }));
+          for(let i=0;i<rows.length;i+=500){ await sb.from('houses').insert(rows.slice(i,i+500)); }
+        }
+        const jb = B.jobs.find(j=>j.villageId===v.id);
+        if(jb){ const { data:jd } = await sb.from('boq_jobs').upsert({ id:jb.cloudId||undefined, village_id:v.cloudId, vendor_id:vendorCloudId(jb.vendorId), prices:jb.prices||{}, bqty:jb.bqty||{}, qty:jb.qty||{} }, {onConflict:'id'}).select('id').single(); if(jd) jb.cloudId=jd.id; }
+      }
+    }
+    persistLocalOnly();
+    toast('อัปโหลดขึ้น cloud สำเร็จ');
+  }catch(e){ toast('อัปโหลดไม่สำเร็จ: '+e.message); }
+}
+
+/* ===== login ===== */
+function renderLogin(){
+  $('loginGate').innerHTML = `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="lock">🔒</div>
+      <h2>FTTH Village Progress</h2>
+      <p>Progress หมู่บ้าน + BOQ งบประมาณ · สิทธิ์การเห็นข้อมูลแยกตามผู้ใช้ กรุณาเข้าสู่ระบบ</p>
+      ${cloudOn?'<div class="notice" style="text-align:left">☁️ โหมด Cloud — ข้อมูลซิงค์ทุกเครื่อง · ใช้ <b>อีเมล</b> + รหัสผ่านที่ผู้ดูแลสร้างให้</div>':''}
+      <div class="field"><label>${cloudOn?'อีเมล':'Username'}</label><input id="loginUser" placeholder="${cloudOn?'อีเมล':'ชื่อผู้ใช้'}" autocomplete="off"></div>
+      <div class="field"><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-green" style="width:100%" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="$('xlsxInput').click()">📂 นำเข้าไฟล์ข้อมูลจาก AIS (.xlsx)</button>
+    </div>
+  </div>`;
+}
+async function doLogin(){
+  const u = $('loginUser').value.trim();
+  const p = $('loginPass').value;
+  if(cloudOn){
+    try{
+      const { data, error } = await sb.auth.signInWithPassword({ email:u, password:p });
+      if(error) throw error;
+      cloudUser = data.user;
+      const { data:me } = await sb.from('vendors').select('*').eq('auth_uid', cloudUser.id).single();
+      await cloudPull();
+      if(me && me.is_admin){ enterApp('admin', null); }
+      else if(me){
+        let lv = B.vendors.find(x=>x.cloudId===me.id);
+        if(!lv){ lv={id:me.id, cloudId:me.id, name:me.name, prices:me.prices||{}}; B.vendors.push(lv); }
+        enterApp('vendor', lv.id);
+      } else { toast('บัญชีนี้ยังไม่ได้ผูกกับ Vendor — ติดต่อผู้ดูแล'); }
+      return;
+    }catch(e){ toast('เข้าสู่ระบบไม่สำเร็จ: '+(e.message||'')); return; }
+  }
+  if(u === B.adminUser && p === B.adminPass){ enterApp('admin', null); return; }
+  const v = B.vendors.find(v=> v.user === u && v.pass === p);
+  if(v){ enterApp('vendor', v.id); }
+  else toast('Username หรือ Password ไม่ถูกต้อง');
+}
+
+/* ===== vendors (admin) ===== */
+function viewVendors(){
+  const cloudPanel = cloudOn ? `
+  <div class="panel" style="border:1.5px solid var(--green)">
+    <div class="section-label">☁️ Cloud — ข้อมูลซิงค์ทุกเครื่อง</div>
+    <div class="notice" style="text-align:left">เชื่อม cloud อยู่ · Vendor ที่สร้างจะ login ได้จากทุกเครื่องด้วย <b>อีเมล + รหัส</b> ที่ตั้งด้านล่าง</div>
+    <button class="btn btn-dark btn-sm" onclick="cloudSeedFromLocal()">⬆️ อัปโหลดข้อมูลในเครื่องขึ้น cloud (ครั้งแรก)</button>
+    <button class="btn btn-ghost btn-sm" onclick="cloudPull()">⬇️ ดึงข้อมูลล่าสุดจาก cloud</button>
+  </div>` : `
+  <div class="notice" style="text-align:left">ℹ️ ยังไม่ได้เปิด Cloud — ข้อมูลเก็บในเครื่องนี้เท่านั้น (ดูวิธีเปิดในไฟล์คู่มือ supabase)</div>`;
+  return cloudPanel + `
+  <div class="panel">
+    <div class="section-label">เพิ่ม Vendor</div>
+    <div class="field"><label>ชื่อ Vendor / ผู้รับเหมา</label><input id="nvName" placeholder="เช่น ผรม.1"></div>
+    <div class="grid2">
+      <div class="field"><label>Username</label><input id="nvUser" placeholder="เช่น prm1" autocomplete="off"></div>
+      <div class="field"><label>Password</label><input id="nvPass" placeholder="รหัสผ่าน"></div>
+    </div>
+    <button class="btn btn-green btn-sm" onclick="addVendor()">＋ เพิ่ม Vendor</button>
+  </div>
+  <div class="panel">
+    <div class="section-label">Vendor ทั้งหมด · แก้ user/pass ได้ในช่องเลย</div>
+    ${B.vendors.length? B.vendors.map(v=>`
+      <div class="vcard">
+        <div class="vcard-top">
+          <h3>${esc(v.name)}</h3>
+          <button class="btn btn-red btn-sm" onclick="delVendor('${v.id}')">ลบ</button>
+        </div>
+        <div class="grid2" style="margin-top:8px">
+          <div class="field" style="margin-bottom:0"><label>Username</label><input value="${esc(v.user)}" onchange="setVendorCred('${v.id}','user',this.value)"></div>
+          <div class="field" style="margin-bottom:0"><label>Password</label><input value="${esc(v.pass)}" onchange="setVendorCred('${v.id}','pass',this.value)"></div>
+        </div>
+        <div class="sub" style="font-size:11.5px;color:var(--muted);margin-top:6px">ตั้งราคาแล้ว ${Object.keys(v.prices||{}).length} รายการ</div>
+        <div class="data-row"><button class="btn btn-ghost btn-sm" onclick="exportVendorPackage('${v.id}')">📦 Export ไฟล์ข้อมูลให้ ${esc(v.name)} (.xlsx)</button></div>
+      </div>`).join('') : '<div class="sub" style="color:var(--muted);font-size:13px">ยังไม่มี Vendor</div>'}
+  </div>
+  <div class="panel">
+    <div class="section-label">บัญชีผู้ดูแล (AIS)</div>
+    <div class="grid2">
+      <div class="field"><label>Username</label><input id="adminUserIn" value="${esc(B.adminUser)}"></div>
+      <div class="field"><label>Password</label><input id="adminPassIn" value="${esc(B.adminPass)}"></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="saveAdminCred()">บันทึกบัญชีผู้ดูแล</button>
+  </div>`;
+}
+async function addVendor(){
+  const name = $('nvName').value.trim(), user = $('nvUser').value.trim(), pass = $('nvPass').value.trim();
+  const role = $('nvRole') ? $('nvRole').value : 'vendor';
+  if(!name || !user || !pass){ toast('กรอกชื่อ, '+(cloudOn?'อีเมล':'Username')+' และ Password ให้ครบ'); return; }
+  if(cloudOn){
+    if(pass.length < 6){ toast('รหัสผ่านต้องยาวอย่างน้อย 6 ตัว'); return; }
+    const email = user.includes('@') ? user : user+'@ais.local';
+    try{
+      const { data, error } = await sb.rpc('admin_create_account', {
+        new_email: email, new_password: pass, disp_name: name, make_admin: (role==='admin')
+      });
+      if(error) throw error;
+      if(role !== 'admin'){
+        B.vendors.push({id:data, cloudId:data, name, user:email, pass:'', prices:{}});
+        bqPersist();
+      }
+      $('nvName').value=''; $('nvUser').value=''; $('nvPass').value='';
+      toast('สร้างบัญชี '+name+' แล้ว — login ด้วย '+email);
+      renderAccounts();
+    }catch(e){
+      toast('สร้างไม่สำเร็จ: '+(e.message||'')+' (ถ้าเป็นครั้งแรก ต้องรัน supabase-admin-users.sql ก่อน)');
+    }
+    return;
+  }
+  if(user === B.adminUser || B.vendors.some(v=>v.user===user)){ toast('Username นี้ถูกใช้แล้ว'); return; }
+  B.vendors.push({id:uid(), name, user, pass, prices:{}});
+  bqPersist(); renderVendorMode(); toast('เพิ่ม '+name+' แล้ว');
+}
+function setVendorCred(id, key, val){
+  const v = vendorById(id); if(!v) return;
+  val = val.trim();
+  if(!val){ toast('ค่าว่างไม่ได้'); bqRender(); return; }
+  if(key==='user' && (val===B.adminUser || B.vendors.some(x=>x.id!==id && x.user===val))){ toast('Username นี้ถูกใช้แล้ว'); bqRender(); return; }
+  v[key] = val; bqPersist(); toast('บันทึกแล้ว');
+}
+async function delVendor(id){
+  const vd = B.vendors.find(v=>v.id===id);
+  if(!confirm('ลบ Vendor นี้? งานที่ผูกอยู่จะไม่ถูกลบแต่จะไม่มีราคา')) return;
+  const cid = vd && vd.cloudId;
+  B.vendors = B.vendors.filter(v=>v.id!==id);
+  bqPersist(); refreshAdminUI();
+  if(cloudOn && cloudUser && cid){
+    try{ await sb.from('vendors').delete().eq('id', cid); toast('ลบ Vendor ออกจาก cloud แล้ว'); }
+    catch(e){ toast('ลบในเครื่องแล้ว แต่ลบบน cloud ไม่สำเร็จ'); }
+  }
+}
+function saveAdminCred(){
+  const u = $('adminUserIn').value.trim(), p = $('adminPassIn').value.trim();
+  if(!u || !p){ toast('Username / Password ว่างไม่ได้'); return; }
+  if(B.vendors.some(v=>v.user===u)){ toast('Username นี้ซ้ำกับ Vendor'); return; }
+  B.adminUser = u; B.adminPass = p; bqPersist(); toast('บันทึกบัญชีผู้ดูแลแล้ว');
+}
+
+/* ===== prices ===== */
+function viewPrices(){
+  const isAdmin = session.role==='admin';
+  const vid = isAdmin ? (ui.vendorSel || (B.vendors[0]||{}).id) : session.vendorId;
+  ui.vendorSel = vid;
+  const v = vendorById(vid);
+  if(!v) return `<div class="panel">ยังไม่มี Vendor — ${isAdmin?'เพิ่มในแท็บ Vendor ก่อนครับ':'ติดต่อผู้ดูแล'}</div>`;
+  const rows = itemRows((idx)=>{
+    const custom = v.prices && v.prices['i'+idx] != null && v.prices['i'+idx] !== '';
+    const val = custom ? v.prices['i'+idx] : '';
+    return isAdmin
+      ? `<input type="number" placeholder="ราคา" value="${val}" onchange="setPrice('${v.id}',${idx},this.value)">`
+      : `<div class="line-total">${fmt(priceOf(v,idx))}</div>`;
+  }, null);
+  return `
+  ${isAdmin?`<div class="panel">
+    <div class="grid2">
+      <div class="field"><label>เลือก Vendor</label><select onchange="ui.vendorSel=this.value;refreshAdminUI()">${B.vendors.map(x=>`<option value="${x.id}" ${x.id===vid?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-dark btn-sm" onclick="exportVendorPrices('${v.id}')">📊 Export ราคา ${esc(v.name)}</button>
+          <button class="btn btn-ghost btn-sm" onclick="importFor='prices:${v.id}';$('boqXlsxIn').click()">📥 Import ราคา</button>
+        </div>
+      </div>
+    </div>
+    <div class="notice">ใส่ราคาต่อหน่วยของ ${esc(v.name)} เฉพาะรายการที่ใช้ · ไฟล์ Export มีเฉพาะราคาของ Vendor รายนี้ ส่งให้เขาได้เลย</div>
+  </div>`:`<div class="panel"><div class="notice">ราคาต่อหน่วยตามที่ตกลงกับ AIS · เห็นเฉพาะราคาของ ${esc(v.name)} เท่านั้น</div><button class="btn btn-dark btn-sm" onclick="exportVendorPrices('${v.id}')">📊 Export ราคาของฉัน</button></div>`}
+  <input class="search" placeholder="🔍 ค้นหารายการ เช่น splitter, HDPE, ท่อ..." value="${esc(ui.q)}" oninput="ui.q=this.value;refreshItemList()">
+  <div class="panel" id="itemList">${rows}</div>`;
+}
+function setPrice(vid, idx, val){
+  const v = vendorById(vid); if(!v) return;
+  v.prices = v.prices || {};
+  if(val === '' ) delete v.prices['i'+idx];
+  else v.prices['i'+idx] = +val;
+  bqPersist();
+}
+
+/* ===== jobs / BOQ ===== */
+function viewJobs(){
+  const isAdmin = session.role==='admin';
+  let jobs = B.jobs.filter(j=> isAdmin || j.vendorId===session.vendorId);
+  const jq = (ui.jobQ||'').trim().toLowerCase();
+  if(jq) jobs = jobs.filter(j=> jobName(j).toLowerCase().includes(jq) || ((vendorById(j.vendorId)||{}).name||'').toLowerCase().includes(jq));
+  if(ui.jobSel){
+    const job = B.jobs.find(j=>j.id===ui.jobSel);
+    if(job) return viewJobDetail(job);
+    ui.jobSel = null;
+  }
+  return `
+  ${isAdmin?`<div class="notice">โครงการสร้างที่แท็บ 🏘️ Progress — งาน BOQ ของทุกโครงการถูกสร้างและผูกให้อัตโนมัติ กรอกราคา/จำนวนในงานแต่ละโครงการ หรือผ่านไฟล์ Master</div>`:''}
+  <div class="section-label">งานทั้งหมด</div>
+  <input class="search" placeholder="🔍 ค้นหาโครงการ / Vendor..." value="${esc(ui.jobQ||'')}" oninput="ui.jobQ=this.value;refreshJobList()">
+  <div id="jobListBox">${jobs.length? jobs.map(j=>{
+    const cost = jobCost(j);
+    const bud = jobBudget(j);
+    const over = bud && cost > bud;
+    return `<div class="vcard" onclick="ui.jobSel='${j.id}';bqRender()" style="cursor:pointer">
+      <div class="vcard-top">
+        <div><h3>${esc(jobName(j))}</h3><div class="sub">${j.villageId?'🔗 ':''}${esc((vendorById(j.vendorId)||{}).name||'-')} · ${Object.values(j.qty||{}).filter(x=>+x>0).length} รายการ</div></div>
+        <div style="text-align:right">
+          <div class="money" style="font-size:16px;color:${over?'var(--red)':'var(--forest)'}">${fmt(cost)} ฿</div>
+          ${bud?`<div class="sub">งบ ${fmt(bud)} ฿</div>`:''}
+        </div>
+      </div>
+      ${bud?`<div class="budget-bar"><i class="${over?'over':''}" style="width:${Math.min(100,cost/bud*100)}%"></i></div>`:''}
+    </div>`;
+  }).join('') : '<div class="panel" style="color:var(--muted);font-size:13px">ไม่พบงาน</div>'}</div>`;
+}
+function refreshJobList(){
+  const box = $('jobListBox'); if(!box) return;
+  let jobs = B.jobs.filter(j=> isAdmin() || j.vendorId===session.vendorId);
+  const jq = (ui.jobQ||'').trim().toLowerCase();
+  if(jq) jobs = jobs.filter(j=> jobName(j).toLowerCase().includes(jq) || ((vendorById(j.vendorId)||{}).name||'').toLowerCase().includes(jq));
+  box.innerHTML = jobs.length? jobs.map(j=>{
+    const cost = jobCost(j), bud = jobBudget(j), over = bud && cost > bud;
+    return `<div class="vcard" onclick="ui.jobSel='${j.id}';render()" style="cursor:pointer">
+      <div class="vcard-top">
+        <div><h3>${esc(jobName(j))}</h3><div class="sub">${j.villageId?'🔗 ':''}${esc((vendorById(j.vendorId)||{}).name||'-')} · ${Object.values(j.qty||{}).filter(x=>+x>0).length} รายการ</div></div>
+        <div style="text-align:right">
+          <div class="money" style="font-size:16px;color:${over?'var(--red)':'var(--forest)'}">${fmt(cost)} ฿</div>
+          ${bud?`<div class="sub">งบ ${fmt(bud)} ฿</div>`:''}
+        </div>
+      </div>
+      ${bud?`<div class="budget-bar"><i class="${over?'over':''}" style="width:${Math.min(100,cost/bud*100)}%"></i></div>`:''}
+    </div>`;
+  }).join('') : '<div class="panel" style="color:var(--muted);font-size:13px">ไม่พบงาน</div>';
+}
+function pickJobVillage(){
+  const sel = $('njVillage');
+  $('njNameWrap').style.display = sel.value ? 'none' : '';
+  if(sel.value){
+    const vv = state.villages.find(x=>x.id===sel.value);
+    if(vv && vv.vendorId && $('njVendor')) $('njVendor').value = vv.vendorId;
+  }
+}
+function jobName(j){
+  if(j.villageId){
+    const vv = state.villages.find(x=>x.id===j.villageId);
+    if(vv) return vv.name;
+  }
+  return j.name;
+}
+function addJob(){
+  if(!B.vendors.length){ toast('เพิ่ม Vendor ก่อนครับ'); return; }
+  const vilSel = $('njVillage') ? $('njVillage').value : '';
+  let name = '', villageId = null;
+  if(vilSel){
+    const vv = state.villages.find(x=>x.id===vilSel);
+    name = vv ? vv.name : ''; villageId = vilSel;
+  } else {
+    name = $('njName').value.trim();
+  }
+  if(!name){ toast('เลือกหมู่บ้านหรือใส่ชื่องานก่อนครับ'); return; }
+  B.jobs.push({id:uid(), name, villageId, vendorId:'', budget:'', qty:{}, bqty:{}, prices:{}, date:todayISO()});
+  bqPersist(); bqRender();
+}
+function delJob(id){
+  if(!confirm('ลบงานนี้ทั้งหมด?')) return;
+  B.jobs = B.jobs.filter(j=>j.id!==id);
+  ui.jobSel = null; bqPersist(); bqRender();
+}
+function viewJobDetail(job){
+  const isAdmin = session.role==='admin';
+  const v = vendorById(job.vendorId);
+  const rows = itemRows((idx)=> jobRowCells(job, v, idx), job);
+  const cost = jobCost(job);
+  const bud = jobBudget(job);
+  const over = bud && cost > bud;
+  return `
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><h2 style="font-size:17px">${esc(jobName(job))}</h2>
+      <div class="sub" style="font-size:12px;color:var(--muted)">Vendor: ${esc((v||{}).name||'-')} · งบคำนวณจาก ตั้งงบ × ราคา</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="ui.jobSel=null;bqRender()">← กลับ</button>
+    </div>
+    <div class="data-row">
+      <button class="btn btn-dark btn-sm" onclick="exportJobBOQ('${job.id}')">📊 Export BOQ งานนี้</button>
+      <button class="btn btn-ghost btn-sm" onclick="importFor='job:${job.id}';$('boqXlsxIn').click()">📥 Import จำนวน</button>
+      ${isAdmin?`<button class="btn btn-red btn-sm" onclick="delJob('${job.id}')">ลบงาน</button>`:''}
+    </div>
+    <div style="margin-top:8px;display:flex;gap:14px;align-items:center;font-size:12.5px;color:var(--muted)">
+      <label style="display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" ${ui.qtyOnly?'checked':''} onchange="ui.qtyOnly=this.checked;refreshItemList()"> แสดงเฉพาะรายการที่ตั้งงบ/ใช้งาน</label>
+    </div>
+  </div>
+  <input class="search" placeholder="🔍 ค้นหารายการ..." value="${esc(ui.q)}" oninput="ui.q=this.value;refreshItemList()">
+  <div style="display:flex;justify-content:flex-end;gap:0;font-size:10.5px;color:var(--muted);font-weight:700;padding:0 18px 4px 0">
+    <span style="width:60px;text-align:center">ราคา</span><span style="width:58px;text-align:center">ตั้งงบ</span><span style="width:58px;text-align:center">ใช้แล้ว</span><span style="width:78px;text-align:right">คงเหลือ ฿</span>
+  </div>
+  <div class="panel" id="itemList">${rows}</div>
+  <div class="totalbar ${over?'over':''}">
+    <span style="font-size:12px;line-height:1.7">งบ (ตั้งงบ) <b id="grandBudget" style="font-family:'Taviraj',serif;font-size:15px;color:#9BD84A">${fmt(bud)}</b> ฿
+      · ใช้แล้ว <b id="grandTotal" style="font-family:'Taviraj',serif;font-size:15px">${fmt(cost)}</b> ฿</span>
+    <span style="text-align:right;font-size:11px;opacity:.85">คงเหลือ<br><b id="grandRemain" style="font-family:'Taviraj',serif;font-size:20px;color:${over?'#FF9B9B':'var(--green)'}">${fmt(bud-cost)}</b> ฿</span>
+  </div>`;
+}
+function setQty(jid, idx, val){
+  const job = B.jobs.find(j=>j.id===jid); if(!job) return;
+  job.qty = job.qty || {};
+  if(val==='' || +val===0) delete job.qty['i'+idx];
+  else job.qty['i'+idx] = +val;
+  bqPersist();
+  refreshJobTotals(job);
+}
+
+/* เซลล์รายบรรทัดของหน้างาน: ราคา · ตั้งงบ · ใช้แล้ว · คงเหลือ */
+function jobRowCells(job, v, idx){
+  const bq = (job.bqty||{})['i'+idx] || '';
+  const uq = (job.qty||{})['i'+idx] || '';
+  const p = jobPrice(job, idx);
+  const pv = (job.prices||{})['i'+idx];
+  const remain = ((+bq||0) - (+uq||0)) * p;
+  const priceCell = isAdmin()
+    ? `<input type="number" style="width:60px" title="ราคา/หน่วย โครงการนี้" value="${pv!=null?pv:''}" placeholder="ราคา" onchange="setJobPrice('${job.id}',${idx},this.value)">`
+    : `<div class="line-total" style="width:60px;font-weight:500;color:var(--muted)">${fmt(p)}</div>`;
+  return `${priceCell}
+    <input type="number" style="width:52px" title="จำนวนตั้งงบ" placeholder="งบ" value="${bq}" onchange="setBQty('${job.id}',${idx},this.value)">
+    <input type="number" style="width:52px" title="จำนวนที่ใช้แล้ว" placeholder="ใช้" value="${uq}" onchange="setQty('${job.id}',${idx},this.value)">
+    <div class="line-total" style="width:78px;color:${bq&&remain<0?'var(--red)':''}">${bq? fmt(remain)+' ฿':''}</div>`;
+}
+
+/* item list rows shared by prices & job views */
+function toggleSec(si){
+  ui.openSecs = ui.openSecs || {};
+  ui.openSecs[si] = !ui.openSecs[si];
+  refreshItemList();
+}
+function itemRows(rightCellFn, job){
+  ui.openSecs = ui.openSecs || {};
+  const q = (ui.q||'').toLowerCase();
+  // group by section
+  const secs = [];
+  ITEMS.forEach((it, idx)=>{
+    if(q && !(it.n.toLowerCase().includes(q) || it.s.toLowerCase().includes(q))) return;
+    if(job && ui.qtyOnly && !((job.qty||{})['i'+idx] > 0) && !((job.bqty||{})['i'+idx] > 0)) return;
+    if(!secs.length || secs[secs.length-1].name !== it.s) secs.push({name:it.s, idxs:[]});
+    secs[secs.length-1].idxs.push(idx);
+  });
+  if(!secs.length) return '<div style="color:var(--muted);font-size:13px;padding:10px">ไม่พบรายการ</div>';
+  let html = '';
+  secs.forEach((sec, si)=>{
+    const qtyN = job ? sec.idxs.filter(i=>(job.qty||{})['i'+i] > 0 || (job.bqty||{})['i'+i] > 0).length : 0;
+    const key = sec.name.replace(/'/g,''); const open = !!ui.openSecs[key] || !!q || (job && ui.qtyOnly);
+    html += `<div class="sec-head" style="cursor:pointer;user-select:none" onclick="toggleSec('${sec.name.replace(/'/g,'')}')">
+      ${open?'▾':'▸'} ${esc(sec.name)} <span style="font-weight:500;opacity:.75">· ${sec.idxs.length} รายการ${qtyN?' · กรอกแล้ว '+qtyN:''}</span></div>`;
+    if(!open) return;
+    sec.idxs.forEach(idx=>{
+      const it = ITEMS[idx];
+      const has = job && (job.qty||{})['i'+idx] > 0;
+      html += `<div class="irow ${has?'hasqty':''}">
+        <div class="nm">${esc(it.n)}<br><small>${esc(it.u)}</small></div>
+        ${rightCellFn(idx)}
+      </div>`;
+    });
+  });
+  return html;
+}
+function refreshItemList(){
+  const el = $('itemList'); if(!el) return;
+  if(ui.tab==='prices'){
+    const v = vendorById(session.role==='admin'? ui.vendorSel : session.vendorId);
+    el.innerHTML = itemRows((idx)=>{
+      const custom = v.prices && v.prices['i'+idx] != null && v.prices['i'+idx] !== '';
+      return session.role==='admin'
+        ? `<input type="number" placeholder="ราคา" value="${custom? v.prices['i'+idx]:''}" onchange="setPrice('${v.id}',${idx},this.value)">`
+        : `<div class="line-total">${fmt(priceOf(v,idx))}</div>`;
+    }, null);
+  } else if(ui.jobSel){
+    const job = B.jobs.find(j=>j.id===ui.jobSel);
+    const v = vendorById(job.vendorId);
+    el.innerHTML = itemRows((idx)=> jobRowCells(job, v, idx), job);
+  }
+}
+
+/* ===== summary (admin) ===== */
+function viewSummary(){
+  const byV = {};
+  B.jobs.forEach(j=>{
+    const k = (vendorById(j.vendorId)||{}).name || '-';
+    byV[k] = byV[k] || {n:0, cost:0, budget:0};
+    byV[k].n++; byV[k].cost += jobCost(j); byV[k].budget += jobBudget(j);
+  });
+  return `
+  <div class="panel">
+    <div class="section-label">สรุปงบราย Vendor</div>
+    <table class="sum">
+      <tr><th>Vendor</th><th class="r">งาน</th><th class="r">งบรวม</th><th class="r">ค่างานรวม</th><th class="r">คงเหลือ</th></tr>
+      ${Object.keys(byV).map(k=>{
+        const d = byV[k]; const diff = d.budget - d.cost;
+        return `<tr><td>${esc(k)}</td><td class="r">${d.n}</td><td class="r">${fmt(d.budget)}</td><td class="r">${fmt(d.cost)}</td><td class="r money ${diff<0?'neg':'pos'}">${fmt(diff)}</td></tr>`;
+      }).join('') || '<tr><td colspan="5" style="color:var(--muted)">ยังไม่มีงาน</td></tr>'}
+    </table>
+    <div class="data-row"><button class="btn btn-dark btn-sm" onclick="exportSummary()">📊 Export สรุปทั้งหมด (Excel)</button></div>
+    <div class="notice" style="margin-top:10px">ไฟล์สรุปนี้มีราคาทุก Vendor — <b>สำหรับ AIS ภายในเท่านั้น ห้ามส่งเข้ากลุ่มรวม</b> · ไฟล์ที่ส่งให้ผู้รับเหมาให้ใช้ปุ่ม Export ในหน้าราคา/หน้างานของ Vendor รายนั้น</div>
+  </div>`;
+}
+
+/* ===== Excel export ===== */
+function exportVendorPrices(vid){
+  const v = vendorById(vid); if(!v) return;
+  const aoa = [
+    ['ราคางาน BOQ Underground — เฉพาะ '+v.name, '', '', ''],
+    ['เอกสารความลับระหว่าง AIS และ '+v.name, '', '', ''],
+    [],
+    ['ลำดับ','หมวด','รายการ','หน่วย','ราคา/หน่วย (บาท)']
+  ];
+  ITEMS.forEach((it,idx)=> aoa.push([idx+1, it.s, it.n, it.u, priceOf(v,idx)]));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:6},{wch:24},{wch:56},{wch:8},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws, 'ราคา '+v.name.slice(0,20));
+  XLSX.writeFile(wb, 'BOQ-price-'+v.name.replace(/\s+/g,'-')+'-'+todayISO()+'.xlsx');
+  toast('Export ราคา '+v.name+' แล้ว');
+}
+function exportJobBOQ(jid){
+  const job = B.jobs.find(j=>j.id===jid); if(!job) return;
+  const v = vendorById(job.vendorId);
+  const aoa = [
+    ['BOQ งาน', jobName(job)],
+    ['Vendor', (v||{}).name||'-'],
+    ['กรอบงบประมาณ (บาท)', jobBudget(job)||''],
+    ['วันที่', todayISO()],
+    [],
+    ['ลำดับ','หมวด','รายการ','หน่วย','จำนวน','ราคา/หน่วย','รวม (บาท)']
+  ];
+  let n=0, total=0;
+  ITEMS.forEach((it,idx)=>{
+    const q = +(job.qty||{})['i'+idx]||0;
+    if(!q) return;
+    const p = jobPrice(job,idx), line = q*p; total+=line; n++;
+    aoa.push([n, it.s, (it.on||it.n), it.u, q, p, line]);
+  });
+  aoa.push([]);
+  aoa.push(['','','','','','รวมทั้งงาน', total]);
+  const jbud = jobBudget(job);
+  if(jbud) aoa.push(['','','','','', jbud-total>=0?'คงเหลือจากงบ':'เกินงบ', Math.abs(jbud-total)]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:6},{wch:22},{wch:52},{wch:8},{wch:9},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'BOQ');
+  XLSX.writeFile(wb, 'BOQ-'+jobName(job).replace(/\s+/g,'-')+'-'+todayISO()+'.xlsx');
+  toast('Export BOQ แล้ว');
+}
+function exportSummary(){
+  const wb = XLSX.utils.book_new();
+  const sum = [['งาน','Vendor','งบประมาณ','ค่างาน','คงเหลือ','สถานะ']];
+  B.jobs.forEach(j=>{
+    const cost = jobCost(j), b = jobBudget(j), diff = b-cost;
+    sum.push([j.name, (vendorById(j.vendorId)||{}).name||'-', b, cost, diff, b? (diff>=0?'ในงบ':'เกินงบ'):'-']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(sum);
+  ws['!cols'] = [{wch:34},{wch:16},{wch:13},{wch:13},{wch:13},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws, 'สรุปงบ');
+  XLSX.writeFile(wb, 'BOQ-summary-'+todayISO()+'.xlsx');
+  toast('Export สรุปแล้ว (ไฟล์ภายใน AIS)');
+}
+
+/* ===== Excel import ===== */
+let importFor = null; // 'prices:<vid>' | 'job:<jid>'
+$('boqXlsxIn').addEventListener('change', function(ev){
+  const f = ev.target.files[0]; if(!f || !importFor) return;
+  const rd = new FileReader();
+  rd.onload = e=>{
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+      const nameIdx = {}; ITEMS.forEach((it,i)=> nameIdx[it.n.trim()] = i);
+      let hit = 0;
+      if(importFor.startsWith('prices:')){
+        const v = vendorById(importFor.slice(7));
+        // รับทั้งไฟล์ราคาจากแอปนี้ (คอลัมน์ รายการ/ราคา) และไฟล์มาตรฐาน (Description/Unit Price)
+        const hi = aoa.findIndex(r=> r && (String(r[2]).trim()==='รายการ' || String(r[1]).trim().toLowerCase()==='description'));
+        if(hi>=0){
+          const isApp = String(aoa[hi][2]).trim()==='รายการ';
+          for(let i=hi+1;i<aoa.length;i++){
+            const r = aoa[i]; if(!r) continue;
+            const nm = String(isApp? r[2] : r[1]).trim();
+            const pr = +(isApp? r[4] : r[5]);
+            if(nm && nameIdx[nm]!=null && !isNaN(pr)){ v.prices['i'+nameIdx[nm]] = pr; hit++; }
+          }
+        }
+        bqPersist(); refreshAdminUI(); toast('อัปเดตราคา '+hit+' รายการ');
+      } else if(importFor.startsWith('job:')){
+        const job = B.jobs.find(j=>j.id===importFor.slice(4));
+        const hi = aoa.findIndex(r=> r && String(r[2]).trim()==='รายการ' && String(r[4]).trim()==='จำนวน');
+        if(hi>=0){
+          for(let i=hi+1;i<aoa.length;i++){
+            const r = aoa[i]; if(!r) continue;
+            const nm = String(r[2]).trim(); const q = +r[4];
+            if(nm && nameIdx[nm]!=null && q>0){ job.qty['i'+nameIdx[nm]] = q; hit++; }
+          }
+        }
+        bqPersist(); bqRender(); toast('อัปเดตจำนวน '+hit+' รายการ');
+      }
+    }catch(err){ toast('อ่านไฟล์ไม่สำเร็จ'); }
+    importFor = null; ev.target.value='';
+  };
+  rd.readAsArrayBuffer(f);
+});
+
+bqRestore();
+initCloud();
+window.onerror = function(msg, src, line, col){
+  try{
+    let d = document.getElementById('errBanner');
+    if(!d){ d = document.createElement('div'); d.id='errBanner';
+      d.style.cssText='position:fixed;top:0;left:0;right:0;background:#D64545;color:#fff;padding:8px 12px;font-size:12px;z-index:9999;font-family:monospace;white-space:pre-wrap';
+      document.body.appendChild(d); }
+    d.textContent = '⚠ ' + msg + '  (บรรทัด ' + line + ') — แคปหน้านี้ส่งมาได้เลย';
+  }catch(e){}
+};
+renderLogin();
+if(cloudOn){
+  sb.auth.getSession().then(async ({data})=>{
+    if(data && data.session){
+      cloudUser = data.session.user;
+      const { data:me } = await sb.from('vendors').select('*').eq('auth_uid', cloudUser.id).single();
+      await cloudPull();
+      if(me && me.is_admin) enterApp('admin', null);
+      else if(me){ let lv=B.vendors.find(x=>x.cloudId===me.id)||{id:me.id,cloudId:me.id,name:me.name,prices:me.prices||{}}; if(!B.vendors.includes(lv))B.vendors.push(lv); enterApp('vendor', lv.id); }
+    }
+  });
+}
+
+/* ================= Mode switch (Progress <-> BOQ) ================= */
+function switchMode(m){
+  const map = {dash:'modeDash', progress:'modeProgress', boq:'modeBoq', vendor:'modeVendor', unit:'modeUnit', plan:'modePlan'};
+  const btn = {dash:'mbDash', progress:'mbProgress', boq:'mbBoq', vendor:'mbVendor', unit:'mbUnit', plan:'mbPlan'};
+  Object.keys(map).forEach(k=>{
+    $(map[k]).style.display = (k===m) ? '' : 'none';
+    $(btn[k]).classList.toggle('on', k===m);
+  });
+  if(m==='progress'){ render(); }
+  else {
+    $('fabAdd').style.display='none';
+    if(m==='boq') bqRender();
+    else if(m==='vendor') renderVendorMode();
+    else if(m==='unit') renderUnitMode();
+    else if(m==='plan'){
+      try{
+        const cat = visibleVillages().filter(v=>(v.houses||[]).length)
+          .map(v=>({name:v.name, houses:(v.houses||[]).map(h=>({addr:h.no, status:h.st||''}))}));
+        localStorage.setItem('plan-status-catalog', JSON.stringify(cat));
+      }catch(e){}
+      const fr = $('planFrame');
+      if(!fr.src) fr.src = 'plan-status.html';
+    }
+    else renderDash();
+  }
+  window.scrollTo(0,0);
+}
+
+async function renderVendorMode(){
+  if(!isAdmin()){ switchMode('dash'); return; }
+  const cloudPanel = cloudOn ? `
+  <div class="panel" style="border:1.5px solid var(--green)">
+    <div class="section-label">☁️ Cloud</div>
+    <div class="data-row">
+      <button class="btn btn-dark btn-sm" onclick="cloudSeedFromLocal()">⬆️ อัปโหลดข้อมูลในเครื่องขึ้น cloud</button>
+      <button class="btn btn-ghost btn-sm" onclick="cloudPull()">⬇️ ดึงข้อมูลล่าสุด</button>
+    </div>
+  </div>` : `<div class="notice" style="text-align:left">ℹ️ ยังไม่ได้เปิด Cloud — ข้อมูลเก็บในเครื่องนี้เท่านั้น</div>`;
+
+  const addForm = `
+  <div class="panel">
+    <div class="section-label">＋ สร้างบัญชีใหม่</div>
+    <div class="field"><label>ชื่อที่แสดง (Vendor / ชื่อคน)</label><input id="nvName" placeholder="เช่น SPW หรือ Jakkapan"></div>
+    <div class="grid2">
+      <div class="field"><label>${cloudOn?'อีเมลสำหรับ login':'Username'}</label><input id="nvUser" placeholder="${cloudOn?'เช่น spw@ais.local':'เช่น spw'}" autocomplete="off"></div>
+      <div class="field"><label>Password (อย่างน้อย 6 ตัว)</label><input id="nvPass" placeholder="รหัสผ่าน"></div>
+    </div>
+    <div class="field"><label>สิทธิ์</label>
+      <select id="nvRole">
+        <option value="vendor">👷 ผู้รับเหมา — เห็นเฉพาะงานของตัวเอง</option>
+        <option value="admin">🔑 Admin — เห็นทุกอย่าง</option>
+      </select></div>
+    <button class="btn btn-green btn-sm" onclick="addVendor()">＋ สร้างบัญชี</button>
+  </div>`;
+
+  $('modeVendor').innerHTML =
+    '<div class="section-label">👷 บัญชีผู้ใช้ · Admin เท่านั้น</div>'
+    + cloudPanel + addForm
+    + '<div class="section-label">บัญชีทั้งหมด</div><div id="acctList" class="panel" style="color:var(--muted);font-size:13px">กำลังโหลด...</div>';
+
+  renderAccounts();
+}
+
+async function renderAccounts(){
+  const box = $('acctList'); if(!box) return;
+  if(cloudOn && cloudUser){
+    try{
+      const { data, error } = await sb.rpc('admin_list_accounts');
+      if(error) throw error;
+      if(!data || !data.length){ box.innerHTML = 'ยังไม่มีบัญชี'; return; }
+      // เก็บอีเมลไว้กับ vendor ในเครื่อง เพื่อให้ไฟล์ package มีข้อมูล login
+      data.filter(a=>!a.is_admin).forEach(a=>{
+        let lv = B.vendors.find(v=>v.cloudId===a.id || v.id===a.id);
+        if(!lv){ lv={id:a.id, cloudId:a.id, name:a.name, prices:{}}; B.vendors.push(lv); }
+        lv.name = a.name; lv.user = a.email;
+      });
+      bqPersist();
+      box.style.color=''; box.innerHTML = data.map(a=>acctCard(a)).join('');
+    }catch(e){
+      box.innerHTML = `<div class="notice" style="text-align:left">⚠️ ยังใช้เมนูจัดการบัญชีไม่ได้ — ต้องรันไฟล์ <b>supabase-admin-users.sql</b> ใน Supabase ก่อน (ครั้งเดียว)<br><small>${esc(e.message||'')}</small></div>`;
+    }
+    return;
+  }
+  // โหมดในเครื่อง
+  box.style.color='';
+  box.innerHTML = B.vendors.length ? B.vendors.map(v=>`
+    <div class="vcard">
+      <div class="vcard-top"><h3>${esc(v.name)}</h3>
+        <button class="btn btn-red btn-sm" onclick="delVendor('${v.id}')">ลบ</button></div>
+      <div class="grid2" style="margin-top:8px">
+        <div class="field" style="margin-bottom:0"><label>Username</label><input value="${esc(v.user||'')}" onchange="setVendorCred('${v.id}','user',this.value)"></div>
+        <div class="field" style="margin-bottom:0"><label>Password</label><input value="${esc(v.pass||'')}" onchange="setVendorCred('${v.id}','pass',this.value)"></div>
+      </div>
+      <div class="data-row">
+        <button class="btn btn-dark btn-sm" onclick="previewAs('${v.id}','${esc(v.name)}')">👁️ ดูแบบ ${esc(v.name)}</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportVendorPackage('${v.id}')">📦 Export ไฟล์ข้อมูล</button>
+      </div>
+    </div>`).join('') : 'ยังไม่มี Vendor';
+}
+
+function acctCard(a){
+  const isMe = cloudUser && a.email && cloudUser.email === a.email;
+  return `<div class="vcard">
+    <div class="vcard-top">
+      <div><h3>${esc(a.name)} ${a.is_admin?'<span style="font-size:11px;background:#EAF3DD;color:var(--forest);padding:2px 8px;border-radius:99px;font-weight:700">🔑 ADMIN</span>':'<span style="font-size:11px;background:#F0F4EE;color:var(--muted);padding:2px 8px;border-radius:99px;font-weight:700">👷 ผรม.</span>'}</h3>
+        <div class="sub" style="font-size:12px;color:var(--muted)">${esc(a.email)}${isMe?' · (บัญชีของคุณ)':''}</div></div>
+      ${isMe?'':`<button class="btn btn-red btn-sm" onclick="acctDelete('${a.id}','${esc(a.name)}')">ลบ</button>`}
+    </div>
+    <div class="grid2" style="margin-top:8px">
+      <div class="field" style="margin-bottom:0"><label>ชื่อที่แสดง</label>
+        <input value="${esc(a.name)}" onchange="acctSetName('${a.id}',this.value)"></div>
+      <div class="field" style="margin-bottom:0"><label>อีเมล (ใช้ login)</label>
+        <input value="${esc(a.email)}" onchange="acctSetEmail('${a.id}',this.value)"></div>
+    </div>
+    <div class="grid2" style="margin-top:8px">
+      <div class="field" style="margin-bottom:0"><label>ตั้งรหัสผ่านใหม่</label>
+        <input id="pw-${a.id}" type="text" placeholder="พิมพ์รหัสใหม่ (≥6 ตัว)"></div>
+      <div class="field" style="margin-bottom:0"><label>&nbsp;</label>
+        <button class="btn btn-dark btn-sm" style="width:100%" onclick="acctSetPassword('${a.id}')">💾 บันทึกรหัสใหม่</button></div>
+    </div>
+    ${a.is_admin?'':`<div class="data-row">
+      <button class="btn btn-dark btn-sm" onclick="previewAsByName('${esc(a.name)}')">👁️ ดูแบบ ${esc(a.name)}</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportVendorPackageByName('${esc(a.name)}')">📦 Export ไฟล์ข้อมูล</button>
+    </div>`}
+  </div>`;
+}
+
+async function acctSetPassword(id){
+  const el = $('pw-'+id); const pw = el ? el.value.trim() : '';
+  if(pw.length < 6){ toast('รหัสผ่านต้องยาวอย่างน้อย 6 ตัว'); return; }
+  try{
+    const { error } = await sb.rpc('admin_set_password', { target_id:id, new_password:pw });
+    if(error) throw error;
+    el.value=''; toast('เปลี่ยนรหัสผ่านแล้ว');
+  }catch(e){ toast('เปลี่ยนรหัสไม่สำเร็จ: '+(e.message||'')); }
+}
+async function acctSetEmail(id, email){
+  email = email.trim(); if(!email){ toast('อีเมลว่างไม่ได้'); renderAccounts(); return; }
+  try{
+    const { error } = await sb.rpc('admin_set_email', { target_id:id, new_email:email });
+    if(error) throw error;
+    toast('เปลี่ยนอีเมลแล้ว'); renderAccounts();
+  }catch(e){ toast('เปลี่ยนอีเมลไม่สำเร็จ: '+(e.message||'')); renderAccounts(); }
+}
+async function acctSetName(id, name){
+  name = name.trim(); if(!name){ toast('ชื่อว่างไม่ได้'); renderAccounts(); return; }
+  try{
+    const { error } = await sb.from('vendors').update({ name }).eq('id', id);
+    if(error) throw error;
+    const lv = B.vendors.find(v=>v.cloudId===id || v.id===id);
+    if(lv){ lv.name = name; bqPersist(); }
+    toast('บันทึกชื่อแล้ว');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+(e.message||'')); }
+}
+async function acctDelete(id, name){
+  if(!confirm('ลบบัญชี "'+name+'" ? ผู้ใช้นี้จะ login ไม่ได้อีก')) return;
+  try{
+    const { error } = await sb.rpc('admin_delete_account', { target_id:id });
+    if(error) throw error;
+    B.vendors = B.vendors.filter(v=>v.cloudId!==id && v.id!==id);
+    bqPersist(); toast('ลบบัญชีแล้ว'); renderAccounts();
+  }catch(e){ toast('ลบไม่สำเร็จ: '+(e.message||'')); }
+}
+function previewAsByName(nm){
+  const v = B.vendors.find(x=>x.name.trim()===nm.trim());
+  if(v) previewAs(v.id, v.name);
+  else toast('ยังไม่มีข้อมูลของ '+nm+' ในเครื่อง — กด ⬇️ ดึงข้อมูลล่าสุดก่อน');
+}
+function exportVendorPackageByName(nm){
+  const v = B.vendors.find(x=>x.name.trim()===nm.trim());
+  if(v) exportVendorPackage(v.id); else toast('ยังไม่มีข้อมูลของ '+nm+' ในเครื่อง — กด ⬇️ ดึงข้อมูลล่าสุดก่อน');
+}
+function refreshAdminUI(){
+  if($('modeVendor').style.display !== 'none') renderVendorMode();
+  else bqRender();
+}
+function gotoVillage(id){ currentId = id; switchMode('progress'); }
+const UNIT_STATUSES = ['','พร้อมติดตั้ง ONU','บ้านยังไม่พร้อมร้อยสาย','ท่อ Main ตัน','บ่อพักไม่พร้อมร้อยสาย','ท่อภายในบ่อพักไปตู้ Post ตัน','ท่อภายในบ้านตัน','อยู่ระหว่างการเดินสาย Main Fiber','อยู่ระหว่างการเดินสาย Drop Fiber เข้าบ้าน','อยู่ระหว่างการ Terminate ปล่อยสัญญาณ','สายที่โครงการร้อยไว้ขาด','โครงการไม่ได้ร้อยสาย','ลูกค้าไม่สนใจ ไม่ให้ร้อยสาย'];
+const UNIT_FIELDS = ['no','st','sol','est','lat','lng','name','phone','interest','detail'];
+const UNIT_HEADS  = ['บ้านเลขที่','สถานะ','Solution','Estimate','Lat','Long','ชื่อลูกค้า','เบอร์โทร','สนใจ/ไม่สนใจ','Detail'];
+
+/* ---------- selection state (เหมือน Excel) ---------- */
+let uSel = null;        // {ar, ac, fr, fc}  anchor + focus
+let uDragging = false;
+
+function unitVillage(){ return state.villages.find(v=>v.id===ui.unitVil); }
+function uRange(){
+  if(!uSel) return null;
+  return { r1:Math.min(uSel.ar,uSel.fr), r2:Math.max(uSel.ar,uSel.fr),
+           c1:Math.min(uSel.ac,uSel.fc), c2:Math.max(uSel.ac,uSel.fc) };
+}
+function uPaint(){
+  const g = document.getElementById('ugridBody'); if(!g) return;
+  g.querySelectorAll('td.ucell').forEach(td=>td.classList.remove('sel','anchor'));
+  const R = uRange(); if(!R) return;
+  for(let r=R.r1;r<=R.r2;r++) for(let c=R.c1;c<=R.c2;c++){
+    const td = g.querySelector('td.ucell[data-r="'+r+'"][data-c="'+c+'"]');
+    if(td) td.classList.add('sel');
+  }
+  const a = g.querySelector('td.ucell[data-r="'+uSel.ar+'"][data-c="'+uSel.ac+'"]');
+  if(a) a.classList.add('anchor');
+  const n = (R.r2-R.r1+1)*(R.c2-R.c1+1);
+  const lab = document.getElementById('uSelInfo');
+  if(lab) lab.textContent = n>1 ? ('เลือก '+n+' ช่อง · Delete=ล้าง · Ctrl+C=คัดลอก') : '';
+}
+function uCellDown(ev, r, c){
+  if(ev.shiftKey && uSel){ uSel.fr=r; uSel.fc=c; }
+  else { uSel = {ar:r, ac:c, fr:r, fc:c}; uDragging = true; }
+  uPaint();
+}
+function uCellEnter(r, c){
+  if(!uDragging || !uSel) return;
+  uSel.fr=r; uSel.fc=c; uPaint();
+}
+document.addEventListener('mouseup', ()=>{ uDragging=false; });
+
+/* ---------- render ---------- */
+function renderUnitMode(){
+  const vil = visibleVillages();
+  if(!ui.unitVil || !vil.some(v=>v.id===ui.unitVil)) ui.unitVil = vil[0] ? vil[0].id : null;
+  const v = vil.find(x=>x.id===ui.unitVil);
+  const opts = vil.map(x=>`<option value="${x.id}" ${x.id===ui.unitVil?'selected':''}>${esc(x.name)} (${(x.houses||[]).length})</option>`).join('');
+  let body;
+  if(!v){
+    body = `<div class="panel" style="color:var(--muted);font-size:13px">ยังไม่มีหมู่บ้าน — สร้างที่แท็บ Progress ก่อน</div>`;
+  } else {
+    const hs = v.houses || [];
+    const doneN = hs.filter(h=> h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'')).length;
+    body = `
+    <div class="unit-toolbar">
+      <select onchange="ui.unitVil=this.value;uSel=null;renderUnitMode()" style="font-family:'Sarabun',sans-serif;font-size:14px;padding:8px 11px;border:1.5px solid var(--line);border-radius:9px;background:#fff;min-width:200px">${opts}</select>
+      <button class="btn btn-green btn-sm" onclick="unitAddRows(1)">＋ เพิ่มหลัง</button>
+      <button class="btn btn-dark btn-sm" onclick="unitAddRows(10)">＋ 10 แถว</button>
+      <button class="btn btn-dark btn-sm" onclick="$('unitXlsx').click()">📥 Import Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openPlanWith('${v.id}')">📐 ลง PDF</button>
+      <span class="unit-count" id="uCount">รวม ${hs.length} หลัง · พร้อม ONU ${doneN}</span>
+      <span class="unit-count" id="uSelInfo" style="color:var(--green-dark)"></span>
+    </div>
+    <div class="notice" style="text-align:left">ใช้เหมือน Excel: ลากเลือกหลายช่อง · <b>Delete</b> ล้างช่องที่เลือก · <b>Ctrl+C</b> คัดลอก · <b>Ctrl+V</b> วางจาก Excel (ขยายแถวให้เอง) · ลูกศร/Tab/Enter เลื่อนช่อง</div>
+    <div class="ugrid-wrap">
+      <table class="ugrid">
+        <thead><tr><th>#</th>${UNIT_HEADS.map(h=>`<th>${esc(h)}</th>`).join('')}<th></th></tr></thead>
+        <tbody id="ugridBody">${hs.map((h,i)=>unitRow(v,h,i)).join('')}</tbody>
+      </table>
+    </div>
+    ${hs.length===0?'<div class="panel" style="color:var(--muted);font-size:13px;margin-top:10px">ยังไม่มีข้อมูล — กด "＋ เพิ่มหลัง" หรือ "📥 Import Excel" (อ่านจาก sheet Unit ของไฟล์ Master)</div>':''}`;
+  }
+  $('modeUnit').innerHTML = `<div class="section-label">📋 Unit · ตารางกรอกข้อมูลรายหลัง${cloudOn?' · บันทึกลง Database อัตโนมัติ':''}</div>` + body;
+  uPaint();
+}
+
+function unitRow(v, h, i){
+  const done = h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'');
+  const cell = (c, inner, extraCls)=>
+    `<td class="ucell ${extraCls||''}" data-r="${i}" data-c="${c}" onmousedown="uCellDown(event,${i},${c})" onmouseenter="uCellEnter(${i},${c})">${inner}</td>`;
+  const inp = (c, val, w)=> cell(c, `<input value="${esc(val==null?'':val)}" ${w?`style="width:${w}px"`:''} onchange="unitSet(${i},'${UNIT_FIELDS[c]}',this.value)" onkeydown="uKeyNav(event,${i},${c})">`);
+  const stOpts = UNIT_STATUSES.map(o=>`<option value="${esc(o)}" ${(h.st||'')===o?'selected':''}>${esc(o)||'—'}</option>`).join('');
+  return `<tr>
+    <td class="rownum">${i+1}</td>
+    ${inp(0, h.no)}
+    ${cell(1, `<select onchange="unitSet(${i},'st',this.value)">${stOpts}</select>`, done?'ustat-done':'')}
+    ${inp(2, h.sol)}
+    ${inp(3, h.est)}
+    ${inp(4, h.lat, 74)}
+    ${inp(5, h.lng, 74)}
+    ${inp(6, h.name)}
+    ${inp(7, h.phone)}
+    ${inp(8, h.interest)}
+    ${inp(9, h.detail)}
+    <td class="del"><button onclick="unitDel(${i})" title="ลบแถวนี้">✕</button></td>
+  </tr>`;
+}
+
+/* ---------- edit / rows ---------- */
+function unitRecount(v){
+  v.homesDone = (v.houses||[]).filter(h=> h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'')).length;
+  const c = document.getElementById('uCount');
+  if(c) c.textContent = 'รวม '+v.houses.length+' หลัง · พร้อม ONU '+v.homesDone;
+}
+function unitSave(v){ persist(); if(cloudOn) cloudSaveHouses(v); }
+function unitSet(i, key, val){
+  const v = unitVillage(); if(!v || !v.houses || !v.houses[i]) return;
+  v.houses[i][key] = val;
+  unitRecount(v); unitSave(v);
+  if(key==='st'){
+    const td = document.querySelector('#ugridBody td.ucell[data-r="'+i+'"][data-c="1"]');
+    if(td) td.classList.toggle('ustat-done', val==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(val||''));
+  }
+}
+function unitAddRows(n){
+  const v = unitVillage(); if(!v) return;
+  v.houses = v.houses || [];
+  for(let k=0;k<n;k++) v.houses.push({no:'',st:'',sol:'',est:'',lat:'',lng:'',name:'',phone:'',interest:'',detail:''});
+  persist(); renderUnitMode();
+}
+function unitDel(i){
+  const v = unitVillage(); if(!v) return;
+  v.houses.splice(i,1);
+  unitRecount(v); unitSave(v); uSel=null; renderUnitMode();
+}
+
+/* ---------- keyboard: navigate, delete, copy, paste ---------- */
+function uKeyNav(ev, r, c){
+  const k = ev.key;
+  let nr=r, nc=c;
+  if(k==='ArrowDown' || k==='Enter') nr=r+1;
+  else if(k==='ArrowUp') nr=r-1;
+  else if(k==='Tab'){ nc = ev.shiftKey ? c-1 : c+1; }
+  else return;
+  ev.preventDefault();
+  const v = unitVillage(); if(!v) return;
+  if(nc<0){ nc=UNIT_FIELDS.length-1; nr--; }
+  if(nc>=UNIT_FIELDS.length){ nc=0; nr++; }
+  if(nr<0) nr=0;
+  if(nr>=v.houses.length){ if(k==='Enter'||k==='ArrowDown'||k==='Tab'){ unitAddRows(1); } else nr=v.houses.length-1; }
+  uSel={ar:nr,ac:nc,fr:nr,fc:nc}; uPaint();
+  const td = document.querySelector('#ugridBody td.ucell[data-r="'+nr+'"][data-c="'+nc+'"]');
+  const f = td && td.querySelector('input,select'); if(f){ f.focus(); if(f.select) f.select(); }
+}
+function uClearSelected(){
+  const v = unitVillage(); const R = uRange(); if(!v || !R) return 0;
+  let n=0;
+  for(let r=R.r1;r<=R.r2;r++){
+    if(!v.houses[r]) continue;
+    for(let c=R.c1;c<=R.c2;c++){ v.houses[r][UNIT_FIELDS[c]] = ''; n++; }
+  }
+  unitRecount(v); unitSave(v); renderUnitMode();
+  return n;
+}
+function uCopySelected(){
+  const v = unitVillage(); const R = uRange(); if(!v || !R) return '';
+  const out=[];
+  for(let r=R.r1;r<=R.r2;r++){
+    const row=[];
+    for(let c=R.c1;c<=R.c2;c++) row.push(v.houses[r] ? (v.houses[r][UNIT_FIELDS[c]]||'') : '');
+    out.push(row.join(String.fromCharCode(9)));
+  }
+  return out.join(String.fromCharCode(10));
+}
+function uPasteText(txt, r0, c0){
+  const v = unitVillage(); if(!v || !txt) return 0;
+  v.houses = v.houses || [];
+  const NL = String.fromCharCode(10), TAB = String.fromCharCode(9);
+  let rows = txt.replace(new RegExp(String.fromCharCode(13),'g'),'').split(NL);
+  while(rows.length && rows[rows.length-1].trim()==='') rows.pop();
+  if(!rows.length) return 0;
+  rows.forEach(function(line, ri){
+    const cells = line.split(TAB);
+    const R = r0 + ri;
+    while(v.houses.length <= R) v.houses.push({no:'',st:'',sol:'',est:'',lat:'',lng:'',name:'',phone:'',interest:'',detail:''});
+    cells.forEach(function(val, ci){
+      const C = c0 + ci;
+      if(C >= UNIT_FIELDS.length) return;
+      const key = UNIT_FIELDS[C];
+      val = String(val).trim();
+      v.houses[R][key] = (key==='st') ? normStatus(val) : val;
+    });
+  });
+  unitRecount(v); unitSave(v); renderUnitMode();
+  return rows.length;
+}
+function normStatus(s){
+  s = String(s||'').trim();
+  if(!s) return '';
+  const exact = UNIT_STATUSES.find(x=> x && x===s);
+  if(exact) return exact;
+  const loose = UNIT_STATUSES.find(x=> x && (x.indexOf(s)>=0 || s.indexOf(x)>=0));
+  return loose || s;
+}
+/* global key handler เฉพาะตอนอยู่แท็บ Unit */
+document.addEventListener('keydown', function(ev){
+  const md = document.getElementById('modeUnit');
+  if(!md || md.style.display==='none' || !uSel) return;
+  const R = uRange(); if(!R) return;
+  const multi = (R.r2-R.r1)>0 || (R.c2-R.c1)>0;
+  const tag = (ev.target.tagName||'').toLowerCase();
+  if((ev.key==='Delete' || ev.key==='Backspace')){
+    if(multi || tag==='td' || tag==='select'){
+      ev.preventDefault();
+      const n = uClearSelected();
+      toast('ล้าง '+n+' ช่องแล้ว');
+    }
+    return;
+  }
+  if((ev.ctrlKey||ev.metaKey) && (ev.key==='c'||ev.key==='C') && multi){
+    const txt = uCopySelected();
+    if(txt && navigator.clipboard) navigator.clipboard.writeText(txt);
+    else if(txt){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    toast('คัดลอกแล้ว วางใน Excel ได้เลย');
+    ev.preventDefault();
+  }
+});
+/* วางจาก Excel: จับที่ระดับหน้า เพื่อให้กระจายหลายช่องได้เสมอ */
+document.addEventListener('paste', function(ev){
+  const md = document.getElementById('modeUnit');
+  if(!md || md.style.display==='none' || !uSel) return;
+  const txt = (ev.clipboardData || window.clipboardData).getData('text');
+  const TAB = String.fromCharCode(9), NL = String.fromCharCode(10);
+  if(!txt || (txt.indexOf(TAB)<0 && txt.indexOf(NL)<0)) return;  // ค่าเดียว ปล่อยตามปกติ
+  ev.preventDefault();
+  const R = uRange();
+  const n = uPasteText(txt, R.r1, R.c1);
+  toast('วาง '+n+' แถวลงตารางแล้ว');
+});
+
+/* ---------- Import Excel (อ่าน sheet Unit จากไฟล์ Master) ---------- */
+function unitImportExcel(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const v = unitVillage();
+  const rd = new FileReader();
+  rd.onload = e=>{
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const sn = wb.SheetNames.find(x=>x==='Unit') || wb.SheetNames[0];
+      const ua = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:''});
+      if(!ua.length){ toast('ไม่พบข้อมูลในไฟล์'); return; }
+      const uh = (ua[0]||[]).map(x=>String(x).toLowerCase());
+      const col = (...keys)=>{ for(const key of keys){ const i=uh.findIndex(h=>h.includes(key)); if(i>=0) return i; } return -1; };
+      const cVil=col('โครงการ'), cNo=col('บ้านเลขที่','address'), cLat=col('lat'), cLng=col('lot','lng','long'),
+            cSt=col('status','สถานะ'), cSol=col('solution'), cEst=col('estimate'), cDet=col('detail'),
+            cName=col('name','ชื่อ'), cPhone=col('phone','เบอร์'), cInt=col('สนใจ','interest');
+      const grouped = {};
+      for(let r=1;r<ua.length;r++){
+        const row = ua[r];
+        const vname = cVil>=0 ? String(row[cVil]||'').trim() : (v? v.name : '');
+        if(!vname) continue;
+        (grouped[vname]=grouped[vname]||[]).push({
+          no: cNo>=0?String(row[cNo]||'').trim():'', st: cSt>=0?normStatus(String(row[cSt]||'')):'',
+          lat: cLat>=0?(row[cLat]||''):'', lng: cLng>=0?(row[cLng]||''):'',
+          sol: cSol>=0?String(row[cSol]||''):'', est: cEst>=0?String(row[cEst]||''):'',
+          detail: cDet>=0?String(row[cDet]||''):'', name: cName>=0?String(row[cName]||''):'',
+          phone: cPhone>=0?String(row[cPhone]||''):'', interest: cInt>=0?String(row[cInt]||''):''
+        });
+      }
+      let updated=0, created=0;
+      Object.keys(grouped).forEach(vn=>{
+        let tv = state.villages.find(x=>x.name.trim()===vn.trim());
+        if(!tv){
+          tv = {id:uid(), name:vn, contractor:'', vendorId:null, ports:'', homesDone:0, start:'', end:'', issue:'',
+                tasks:TEMPLATE.map(t=>({id:uid(),name:t.name,w:t.w,p:0,note:''})), houses:[]};
+          state.villages.push(tv);
+          B.jobs.push({id:uid(), name:vn, villageId:tv.id, vendorId:'', budget:'', qty:{}, bqty:{}, prices:{}, date:todayISO()});
+          created++;
+        } else updated++;
+        tv.houses = grouped[vn];
+        tv.homesDone = grouped[vn].filter(h=> h.st==='พร้อมติดตั้ง ONU' || /สำเร็จ/.test(h.st||'')).length;
+        if(cloudOn) cloudSaveHouses(tv);
+      });
+      persist(); bqPersist();
+      renderUnitMode();
+      toast('นำเข้าสำเร็จ: อัปเดต '+updated+' · ใหม่ '+created+' โครงการ');
+    }catch(err){ toast('อ่านไฟล์ไม่สำเร็จ'); }
+  };
+  rd.readAsArrayBuffer(f);
+  ev.target.value = '';
+}
+
+/* บันทึก houses ของหมู่บ้านลง cloud (debounced) */
+let unitSaveTimer=null;
+function cloudSaveHouses(v){
+  if(!cloudOn || !cloudUser || !v.cloudId) return;
+  clearTimeout(unitSaveTimer);
+  const dot=document.getElementById('syncDot'); if(dot){dot.textContent='⏳';dot.title='กำลังบันทึก Unit...';}
+  unitSaveTimer = setTimeout(async ()=>{
+    try{
+      await sb.from('houses').delete().eq('village_id', v.cloudId);
+      const rows = (v.houses||[]).filter(h=>h.no||h.st||h.name).map(h=>({ village_id:v.cloudId, no:h.no||'', status:h.st||'', lat:(+h.lat||null), lng:(+h.lng||null), solution:h.sol||'', estimate:h.est||'', detail:h.detail||'', cust_name:h.name||'', cust_phone:h.phone||'', interest:h.interest||'' }));
+      for(let i=0;i<rows.length;i+=500){ await sb.from('houses').insert(rows.slice(i,i+500)); }
+      await sb.from('villages').update({ homes_done:+v.homesDone||0 }).eq('id', v.cloudId);
+      if(dot){dot.textContent='✅';dot.title='บันทึกแล้ว';setTimeout(()=>{if(dot){dot.textContent='☁️';dot.title='เชื่อม cloud';}},1500);}
+    }catch(e){ if(dot){dot.textContent='⚠️';dot.title='บันทึกไม่สำเร็จ';} }
+  }, 1000);
+}
+
+function renderDash(){
+  let vil = visibleVillages();
+  let jobs = isAdmin() ? B.jobs : B.jobs.filter(j=>j.vendorId===session.vendorId);
+  // ตัวกรองราย Vendor (admin เท่านั้น)
+  let filterBar = '';
+  if(isAdmin() && B.vendors.length){
+    if(ui.dashVendor){
+      const fv = B.vendors.find(x=>x.id===ui.dashVendor);
+      if(fv){
+        const nm = fv.name.trim();
+        vil = vil.filter(v=> v.vendorId===fv.id || (v.contractor||'').trim()===nm);
+        const ids = new Set(vil.map(v=>v.id));
+        jobs = jobs.filter(j=> j.vendorId===fv.id || ids.has(j.villageId));
+      } else ui.dashVendor = null;
+    }
+    filterBar = `<div class="unit-toolbar" style="margin-bottom:12px">
+      <span class="unit-count">แสดงข้อมูล:</span>
+      <button class="tab ${!ui.dashVendor?'on':''}" onclick="ui.dashVendor=null;renderDash()">รวมทุก Vendor</button>
+      ${B.vendors.map(x=>`<button class="tab ${ui.dashVendor===x.id?'on':''}" onclick="ui.dashVendor='${x.id}';renderDash()">${esc(x.name)}</button>`).join('')}
+    </div>`;
+  }
+  const n = vil.length;
+  const done = vil.filter(v=>overall(v)>=100).length;
+  const doing = vil.filter(v=>{const p=overall(v);return p>0&&p<100;}).length;
+  const avg = n ? Math.round(vil.reduce((s,v)=>s+overall(v),0)/n) : 0;
+  const ports = vil.reduce((s,v)=>s+(+v.ports||0),0);
+  const homes = vil.reduce((s,v)=>s+(+v.homesDone||0),0);
+  const po = jobs.reduce((s,j)=>s+jobBudget(j),0);
+  const built = jobs.reduce((s,j)=>s+jobCost(j),0);
+  const overPo = po && built > po;
+
+  let vendorTable = '';
+  if(isAdmin() && B.vendors.length){
+    vendorTable = `
+    <div class="section-label">แยกราย Vendor</div>
+    <div class="panel" style="overflow-x:auto">
+      <table class="sum">
+        <tr><th>Vendor</th><th class="r">จำนวนงาน</th><th class="r">งาน %</th><th class="r">เดินสาย (หลัง)</th><th class="r">ค่างานสร้าง</th><th class="r">งบ PO</th><th class="r">คงเหลือ</th></tr>
+        ${B.vendors.map(vd=>{
+          const vv = state.villages.filter(x=>x.vendorId===vd.id || (x.contractor||'').trim()===vd.name.trim());
+          const jj = B.jobs.filter(j=>j.vendorId===vd.id);
+          const a = vv.length ? Math.round(vv.reduce((s,x)=>s+overall(x),0)/vv.length) : 0;
+          const h = vv.reduce((s,x)=>s+(+x.homesDone||0),0);
+          const pt = vv.reduce((s,x)=>s+(+x.ports||0),0);
+          const c = jj.reduce((s,j)=>s+jobCost(j),0);
+          const b = jj.reduce((s,j)=>s+jobBudget(j),0);
+          const d = b - c;
+          const doneN = vv.filter(x=>overall(x)>=100).length;
+          return `<tr style="cursor:pointer" onclick="ui.dashVendor='${vd.id}';renderDash()">
+            <td>${esc(vd.name)}</td>
+            <td class="r"><b>${vv.length}</b>${doneN?` <small style="color:var(--muted)">(เสร็จ ${doneN})</small>`:''}</td>
+            <td class="r">${a}%</td><td class="r">${h}${pt?'/'+pt:''}</td>
+            <td class="r">${fmt(c)}</td><td class="r">${fmt(b)}</td>
+            <td class="r money ${d<0?'neg':'pos'}">${fmt(d)}</td></tr>`;
+        }).join('')}
+      </table>
+    </div>`;
+  }
+
+  $('modeDash').innerHTML = filterBar + `
+  <div class="section-label">1 · ภาพรวมงานสรุป${isAdmin()&&ui.dashVendor?' · '+esc((B.vendors.find(x=>x.id===ui.dashVendor)||{}).name||''):''}</div>
+  <div class="panel">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <b style="font-family:'Taviraj',serif;font-size:42px;color:var(--forest);line-height:1">${avg}%</b>
+      <span style="font-size:13px;color:var(--muted)">ความคืบหน้าเฉลี่ย ${n} หมู่บ้าน</span>
+    </div>
+    <div class="bar" style="margin-top:10px"><i style="width:${avg}%"></i></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <span class="chip idle">ยังไม่เริ่ม ${n-doing-done}</span>
+      <span class="chip doing">กำลังดำเนินการ ${doing}</span>
+      <span class="chip done">ส่งมอบแล้ว ${done}</span>
+    </div>
+  </div>
+
+  <div class="section-label">2 · เดินสายเข้าบ้านสำเร็จ</div>
+  <div class="panel">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <b style="font-family:'Taviraj',serif;font-size:42px;color:var(--forest);line-height:1">${homes}</b>
+      <span style="font-size:13px;color:var(--muted)">หลัง ${ports?'จากทั้งหมด '+ports+' หลัง ('+Math.round(homes/ports*100)+'%)':''}</span>
+    </div>
+    ${ports?`<div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,Math.round(homes/ports*100))}%"></i></div>`:''}
+    <div style="font-size:11.5px;color:var(--muted);margin-top:8px">กรอกจำนวนหลังที่สำเร็จได้ในหน้าหมู่บ้านแต่ละแห่ง (ช่อง "เดินสายเข้าบ้านสำเร็จ")</div>
+  </div>
+
+  <div class="section-label">3-4 · งบประมาณ · ข้อมูลภายใน</div>
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">งบใน PO</span><b>${fmt(po)} ฿</b><small>${jobs.length} งาน BOQ</small></div>
+    <div class="kpi"><span class="lbl">งบที่สร้างงานไปแล้ว</span><b style="color:${overPo?'var(--red)':'var(--forest)'}">${fmt(built)} ฿</b><small class="${overPo?'neg':'pos'}" style="font-weight:700">${po? (overPo?'เกิน PO '+fmt(built-po):'คงเหลือ '+fmt(po-built))+' ฿':''}</small></div>
+  </div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)"><span>เบิกใช้จาก PO</span><span>${po?Math.round(built/po*100)+'%':'-'}</span></div>
+    <div class="budget-bar"><i class="${overPo?'over':''}" style="width:${po?Math.min(100,built/po*100):0}%"></i></div>
+  </div>
+  ${vendorTable}
+  <div class="section-label">รายหมู่บ้านทั้งหมด · แตะเพื่อเปิด</div>
+  <div class="panel" style="overflow-x:auto">
+    <table class="sum">
+      <tr><th>หมู่บ้าน</th><th class="r">%</th><th class="r">เดินสาย (หลัง)</th><th class="r">งบโครงการ</th><th class="r">ใช้ไปแล้ว</th></tr>
+      ${vil.map(v=>{
+        const p = overall(v);
+        const jj = villageJobs(v).filter(j=> isAdmin() || j.vendorId===session.vendorId);
+        const b = jj.reduce((s,j)=>s+jobBudget(j),0);
+        const c = jj.reduce((s,j)=>s+jobCost(j),0);
+        return `<tr style="cursor:pointer" onclick="gotoVillage('${v.id}')">
+          <td>${esc(v.name)}<br><small style="color:var(--muted)">${esc(v.contractor||'-')}</small></td>
+          <td class="r money">${p}%</td>
+          <td class="r">${+v.homesDone||0}${+v.ports?'/'+v.ports:''}</td>
+          <td class="r">${b?fmt(b):'-'}</td>
+          <td class="r money ${b&&c>b?'neg':''}">${c?fmt(c):'-'}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" style="color:var(--muted)">ยังไม่มีหมู่บ้าน</td></tr>'}
+    </table>
+  </div>`;
+}
+
+</script>
+</body>
+</html>
